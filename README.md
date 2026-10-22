@@ -26,6 +26,14 @@ State comes from `aerospace subscribe --all` events, backed by a 5-second refres
 - The fonts `Pixel Code`, `sketchybar-app-font` and `Liga SFMono Nerd Font` (for the calendar icon)
 - Calendar access, which macOS asks for on first launch (under `swift run`, it asks for your terminal)
 
+## Installation
+
+1. Download `Aeronaut-<version>.zip` from [Releases](https://github.com/torifat/aeronaut/releases).
+2. Unzip it and move `Aeronaut.app` to `/Applications`.
+3. The app isn't notarized, so Gatekeeper blocks the first launch. Right-click it and choose Open, or run `xattr -dr com.apple.quarantine /Applications/Aeronaut.app`.
+4. On first launch it asks for Calendar access. 0.1.x releases are ad-hoc signed, so macOS asks again after each update.
+5. To start it at login, add it in System Settings › General › Login Items.
+
 ## Build and run
 
 The Command Line Tools toolchain is enough. If `xcode-select` points somewhere else, such as a Nix SDK, set:
@@ -47,6 +55,8 @@ To render both pills once to a PNG without starting the bar, run:
 ```sh
 swift run Aeronaut --snapshot pill.png
 ```
+
+To build the app bundle yourself, run `scripts/bundle.sh --version 0.1.0`. It builds a release binary, then writes `dist/Aeronaut.app` (signed ad-hoc) and `dist/Aeronaut-0.1.0.zip`. `--binary PATH` uses a prebuilt executable and `--out DIR` changes the output directory.
 
 ## Configuration
 
@@ -94,6 +104,5 @@ If a line is invalid, Aeronaut prints a warning naming the line and uses that op
 
 ## Roadmap
 
-- App bundle and release builds
 - Nix packaging and a launchd agent
 - Per-monitor pills

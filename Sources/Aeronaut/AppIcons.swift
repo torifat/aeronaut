@@ -8,9 +8,17 @@ enum AppIcons {
 		let appNames: [String]
 	}
 
+	/// A signed .app has the map in Contents/Resources. Only `swift run` needs
+	/// `Bundle.module`, which calls fatalError when its bundle is missing, so
+	/// it must not be touched when the main bundle has the file.
+	private static func iconMapURL() -> URL? {
+		if let url = Bundle.main.url(forResource: "icon_map", withExtension: "json") { return url }
+		return Bundle.module.url(forResource: "icon_map", withExtension: "json")
+	}
+
 	private static let byAppName: [String: String] = {
 		guard
-			let url = Bundle.module.url(forResource: "icon_map", withExtension: "json"),
+			let url = iconMapURL(),
 			let data = try? Data(contentsOf: url),
 			let entries = try? JSONDecoder().decode([Entry].self, from: data)
 		else { return [:] }

@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    # macos-26 is the arm64 macOS 26 image. It ships Xcode 26, which the
+    # macOS 26 SDK APIs (Liquid Glass) need.
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 26.6
+        run: |
+          sudo xcode-select -s /Applications/Xcode_26.6.app
+          swift --version
+          xcodebuild -version
+
+      - name: Build universal binary
+        run: swift build -c release --arch arm64 --arch x86_64
+
+      - name: Bundle, sign and zip
+        run: |
+          scripts/bundle.sh --version "${GITHUB_REF_NAME#v}" \
+            --binary .build/apple/Products/Release/Aeronaut
+
+      - name: Check architectures
+        run: |
+          echo "Architectures: $(lipo -archs dist/Aeronaut.app/Contents/MacOS/Aeronaut)"
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          zip=$(ls dist/Aeronaut-*.zip)
+          sha=$(shasum -a 256 "$zip" | cut -d' ' -f1)
+          cat > "$RUNNER_TEMP/notes.md" <<NOTES
+          SHA-256: \`$sha\`
+
+          ## Install
+
+          1. Unzip \`$(basename "$zip")\` and move \`Aeronaut.app\` to /Applications.
+          2. The app isn't notarized, so Gatekeeper blocks the first launch. Right-click it and choose Open, or run \`xattr -dr com.apple.quarantine /Applications/Aeronaut.app\`.
+          3. Allow Calendar access when macOS asks.
+
+          0.1.x releases are ad-hoc signed, so macOS asks for Calendar access again after each update.
+          NOTES
+          gh release create "$GITHUB_REF_NAME" "$zip" \
+            --title "Aeronaut $GITHUB_REF_NAME" \
+            --notes-file "$RUNNER_TEMP/notes.md"
