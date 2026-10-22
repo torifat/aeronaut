@@ -1,0 +1,9 @@
+.build/
+.swiftpm/
+*.xcodeproj
+.DS_Store
+.claude/
+# Snapshots can contain real calendar event titles.
+*.png
+AppIcon.iconset/
+*.icns
