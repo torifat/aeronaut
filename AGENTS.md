@@ -140,7 +140,7 @@ Aeronaut must look right with no config file at all. The file only overrides the
 | `[workspaces]` | `focus-margin` | 0 to 6 (4): the gap between the capsule and the pill's edge |
 | `[workspaces]` | `focus-padding` | `"auto"`, or 0 to 12 |
 | `[workspaces]` | `accent` | A Catppuccin Mocha name (`green`, then rosewater to lavender) or `"#rrggbb"` / `"#aarrggbb"` |
-| `[workspaces]` | `icon-size` | 12 to 20 (18) |
+| `[workspaces]` | `icon-size` | 12 to 20 (16) |
 | `[text]` | `font` | `pixel`, `rounded`, `mono`, `sf` |
 | `[calendar]` | `icon-size` | 12 to 22 (17) |
 
@@ -158,7 +158,7 @@ The palette is Catppuccin Mocha. Colour only appears where it means something: t
 - **What's shown:** each workspace that has windows, plus the focused one.
 - **Unfocused numbers** are Pixel Code 14 in `Theme.grey` (overlay1, 4.4:1 contrast). They're deliberately subdued, because they orient rather than inform, and brighter numbers read as noise. Don't brighten them.
 - **The focused workspace** shows its app icons on the accent capsule, without its number: the capsule already marks it. An empty focused workspace shows its number in the capsule instead. The number scales and fades out as the capsule arrives, and stays grey meanwhile, so it never flashes dark.
-- **Icons:** sketchybar-app-font, 18 pt by default. The focused window's icon is drawn at full opacity and the rest at 0.4.
+- **Icons:** sketchybar-app-font, 16 pt by default. The focused window's icon is drawn at full opacity and the rest at 0.4.
   - Every glyph in this font advances about 1.41 em but draws within the first em, and some draw in less (Ghostty is 12 pt wide). `AppIcons.inkWidth(of:)` measures each glyph once with CoreText, cached per size, and `AppIcon` is boxed to that width, so spacing is even.
   - Icons are 6 pt apart.
 - **Capsule geometry:**
@@ -249,7 +249,7 @@ Upstream discussion is in nikitabobko/AeroSpace#491, with PRs #1932 (`--sort`) a
 ### 2. Release CI (implemented)
 
 `.github/workflows/release.yml` runs on pushed `v*` tags, with `contents: write`.
-- **Runner:** `macos-26` (arm64), with Xcode 26.6 selected explicitly through `xcode-select`. The code uses macOS 26 SDK APIs (Liquid Glass) behind `#available`, so it needs Xcode 26 to compile. The log prints `swift --version` and `xcodebuild -version`.
+- **Runner:** `macos-26` (arm64), with Xcode 26.6 selected explicitly through `xcode-select`. That's Swift 6.3.3, older than a current Command Line Tools install (6.4), so don't use language features newer than CI's compiler. v0.1.0 built cleanly on it. The code uses macOS 26 SDK APIs (Liquid Glass) behind `#available`, so it needs Xcode 26 to compile. The log prints `swift --version` and `xcodebuild -version`.
 - **Steps:** check out, `swift build -c release --arch arm64 --arch x86_64` (output in `.build/apple/Products/Release/Aeronaut`), `scripts/bundle.sh --version "${GITHUB_REF_NAME#v}" --binary ...`, print `lipo -archs`, then `gh release create` with the zip and generated notes (SHA-256, install steps, the Gatekeeper note and the ad-hoc signing note).
 - **Signing:** v0.1.x is ad-hoc signed. An ad-hoc signature's designated requirement is its cdhash, so macOS drops the Calendar grant on every update, and users re-grant Calendar access after upgrading. A later release should sign with a stable self-signed certificate, imported from a CI secret into a temporary keychain, so the grant survives.
 

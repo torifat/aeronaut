@@ -24,7 +24,7 @@ struct SettingsValues: Equatable, Sendable {
 	var workspaces = WorkspacesStyle.compact
 	var focus = FocusStyle.translucent
 	var focusOpacity = Theme.focusOpacity
-	var iconSize = 18.0
+	var iconSize = 16.0
 	var focusMargin = 4.0
 	var font = FontChoice.pixel
 	var calendarIconSize = 17.0

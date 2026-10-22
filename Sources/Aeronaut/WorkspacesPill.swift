@@ -195,11 +195,12 @@ private struct WorkspaceItem: View {
 		.frame(height: Theme.pillHeight)
 		// The highlight's frame when this item is focused, which `SlidingHighlight` reads.
 		.background {
-			// Anchored on a view of the capsule's own size; padding outside it
-			// would be part of the reported bounds.
+			// The same slot as `focusSlot()`, but anchored inside the margin:
+			// padding outside the anchor would be part of the reported bounds.
 			Color.clear
-				.focusSlot()
+				.frame(height: Theme.focusHeight)
 				.anchorPreference(key: ItemBounds.self, value: .bounds) { [workspace.id: $0] }
+				.padding(.horizontal, Theme.focusMargin)
 		}
 	}
 
@@ -261,7 +262,8 @@ private struct WorkspaceItem: View {
 
 extension View {
 	/// The focus capsule's slot in an item: its height, centred, inset from the
-	/// item's edges by `focusMargin`. The anchor and the hover ghost share it.
+	/// item's edges by `focusMargin`. The hover ghost uses it, and the capsule's
+	/// anchor in `WorkspaceItem.body` repeats it with the anchor inside the padding.
 	fileprivate func focusSlot() -> some View {
 		frame(height: Theme.focusHeight).padding(.horizontal, Theme.focusMargin)
 	}
