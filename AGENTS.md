@@ -228,6 +228,7 @@ A green blimp: the app's pill as an airship. Its gondola is a tiny workspace pil
 - **Updating:** `swift scripts/update-icons.swift [TAG]` pulls the latest release, or TAG (`v3.0.12` or `3.0.12`). Before it replaces anything, it checks each download against the SHA-256 digest GitHub lists for it, and checks that every icon in the map resolves to a single glyph in the font. It then prints the old and new versions and any app names the new map dropped. Set `GITHUB_TOKEN` if the API rate-limits you.
 - **The app only uses the bundled font.** `AppIcons` builds the icon font from the bundled file. It also registers that file for the process, so a lookup by name finds it before any installed copy. An installed copy can be any version, and when it's older than the map, icons it lacks don't render as icons.
 - **Default icon:** an app missing from the map shows `:default:`. Upstream adds apps often, so updating may be enough.
+- **Weekly PR:** `.github/workflows/update-icons.yml` runs the script every Monday, and on demand with an optional tag. When the release has changed, it force-pushes the `update-icons` branch and opens a PR, or updates the one already open, so a single PR tracks the newest release. The PR body is the script's summary. The repo setting "Allow GitHub Actions to create and approve pull requests" has to be on, otherwise the push works but opening the PR fails.
 
 ## Known limitation: window order
 

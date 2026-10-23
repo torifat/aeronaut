@@ -1,0 +1,84 @@
+name: Update icons
+
+on:
+  schedule:
+    # Mondays at 06:17 UTC. Upstream releases most days, so weekly is enough.
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "sketchybar-app-font release tag, such as v3.0.12 (default: latest)"
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: update-icons
+
+jobs:
+  update:
+    # The script checks the font with CoreText, so it needs macOS.
+    runs-on: macos-26
+    env:
+      BRANCH: update-icons
+    steps:
+      # The push below passes the token itself, so it isn't left in .git/config
+      # while the script handles downloaded files.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Select Xcode 26.6
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app
+
+      - name: Pull the release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -o pipefail
+          swift scripts/update-icons.swift ${TAG:+"$TAG"} | tee "$RUNNER_TEMP/summary.txt"
+
+      # One PR tracks the newest release: each run force-pushes the same
+      # branch, and edits the PR if one is already open.
+      - name: Open or update the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$(git status --porcelain -- Sources/Aeronaut/Resources)" ]; then
+            echo "Already on the latest release."
+            exit 0
+          fi
+          version=$(cat Sources/Aeronaut/Resources/sketchybar-app-font.version)
+          title="Update sketchybar-app-font to $version"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898732+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git add Sources/Aeronaut/Resources
+          git commit -q -m "$title" -m "$(cat "$RUNNER_TEMP/summary.txt")"
+
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git fetch -q "$remote" "$BRANCH" 2>/dev/null \
+            && git diff --quiet FETCH_HEAD HEAD -- Sources/Aeronaut/Resources; then
+            echo "$BRANCH already has $version."
+          else
+            git push -q --force "$remote" "HEAD:refs/heads/$BRANCH"
+          fi
+
+          {
+            echo "From the [v$version release](https://github.com/kvndrsslr/sketchybar-app-font/releases/tag/v$version), pulled by \`scripts/update-icons.swift\`."
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/summary.txt"
+            echo '```'
+          } > "$RUNNER_TEMP/body.md"
+
+          pr=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')
+          if [ -n "$pr" ]; then
+            gh pr edit "$pr" --title "$title" --body-file "$RUNNER_TEMP/body.md"
+          else
+            gh pr create --base main --head "$BRANCH" --title "$title" --body-file "$RUNNER_TEMP/body.md"
+          fi
