@@ -256,7 +256,12 @@ private struct WorkspaceItem: View {
 		}
 		// The anchor insets by `focusMargin`, so this leaves the capsule exactly
 		// `focusPadding` clear of the icons.
-		.padding(.horizontal, Theme.focusPadding + Theme.focusMargin)
+		.padding(.leading, Theme.focusPadding(beside: inkWidth(of: workspace.windows.first)) + Theme.focusMargin)
+		.padding(.trailing, Theme.focusPadding(beside: inkWidth(of: workspace.windows.last)) + Theme.focusMargin)
+	}
+
+	private func inkWidth(of window: Window?) -> CGFloat {
+		window.map { AppIcons.inkWidth(of: AppIcons.glyph(for: $0.appName)) } ?? Theme.appIconSize
 	}
 }
 

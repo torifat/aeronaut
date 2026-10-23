@@ -101,11 +101,13 @@ enum Theme {
 	@MainActor static var focusMargin: CGFloat { CGFloat(Settings.shared.values.focusMargin) }
 	/// The focus capsule's height, whatever the icon or font size.
 	@MainActor static var focusHeight: CGFloat { pillHeight - 2 * focusMargin }
-	/// The capsule's horizontal padding around the icons. Auto matches the
-	/// vertical inset, so a single icon sits in a circle.
-	@MainActor static var focusPadding: CGFloat {
+	/// The capsule's horizontal padding beside an end icon whose ink is
+	/// `inkWidth` wide. Auto centres that icon in the capsule's rounded end, so a
+	/// single icon sits in a circle however narrow its glyph, and never pads
+	/// less than the vertical inset.
+	@MainActor static func focusPadding(beside inkWidth: CGFloat) -> CGFloat {
 		if let padding = Settings.shared.values.focusPadding { return CGFloat(padding) }
-		return max(1, (focusHeight - appIconSize) / 2)
+		return max(1, (focusHeight - appIconSize) / 2, (focusHeight - inkWidth) / 2)
 	}
 	/// `[workspaces] icon-size` in points.
 	@MainActor static var appIconSize: CGFloat { CGFloat(Settings.shared.values.iconSize) }

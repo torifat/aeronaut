@@ -163,7 +163,7 @@ The palette is Catppuccin Mocha. Colour only appears where it means something: t
   - Icons are 6 pt apart.
 - **Capsule geometry:**
   - The capsule is `Theme.focusHeight` tall: the pill height minus twice `focus-margin`.
-  - With `focus-padding = auto`, its sides are padded by the same amount as its top and bottom, so a single icon sits in a circle at any margin.
+  - With `focus-padding = auto`, the first and last icons are centred in the capsule's rounded ends: each side is padded by `(focusHeight - inkWidth) / 2`, and never by less than the top and bottom inset. So a single icon sits in a circle at any margin, however narrow its glyph. Padding by the inset alone left narrow glyphs, such as Ghostty's 13 pt of ink at 16 pt, in a capsule taller than it was wide, with their corners touching its edge.
   - **Anchor gotcha:** the capsule's rect comes from an `ItemBounds` anchor on a view with an explicit frame. Don't anchor a padded view: padding enlarges the anchored bounds rather than insetting them, so the capsule would fill the whole item.
 - **Capsule fill:** the default focus style is `translucent`, the accent at 0.75 opacity. Fully opaque pastel looks pasted on, and below about 0.65 the colour turns grey and the dimmed icons vanish. `solid`, `glossy`, `tint`, `outline` and `underline` are experiments.
 - **Hover:** hovering an unfocused number brightens it and fades in a surface0 ghost capsule with the same geometry, previewing where focus would go. Hovering a dimmed icon in the capsule raises it to 0.7.
