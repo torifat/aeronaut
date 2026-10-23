@@ -1,11 +1,21 @@
 name: Release
 
-# Run this from the Actions tab on main and pick which part of the version to
-# bump: it builds, tags and publishes in one go. Pushing a v* tag by hand
-# releases that tag instead.
+# A push to main that changes the app releases it: a patch by default, or a
+# minor or major when a commit since the last release has a `Release: minor`
+# or `Release: major` trailer. It can also be run from the Actions tab on main,
+# picking the part to bump. Either way it builds, tags and publishes in one go.
+# Pushing a v* tag by hand releases that tag instead.
 on:
   push:
+    branches: [main]
     tags: ["v*"]
+    # Docs and CI changes don't release. Tag pushes ignore this filter.
+    paths:
+      - "Sources/**"
+      - "Package.swift"
+      - "Package.resolved"
+      - "scripts/bundle.sh"
+      - "scripts/icon.swift"
   workflow_dispatch:
     inputs:
       bump:
@@ -38,7 +48,7 @@ jobs:
         env:
           BUMP: ${{ inputs.bump }}
         run: |
-          if [ "$GITHUB_EVENT_NAME" = push ]; then
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF_TYPE" = tag ]; then
             tag=$GITHUB_REF_NAME
             prev=$(git describe --tags --abbrev=0 --match 'v[0-9]*' "$tag^" 2>/dev/null || true)
           else
@@ -49,7 +59,16 @@ jobs:
             prev=$(git describe --tags --abbrev=0 --match 'v[0-9]*')
             if [ "$(git rev-list -n 1 "$prev")" = "$(git rev-parse HEAD)" ]; then
               echo "main is already released as $prev." >&2
+              # A push of an already tagged commit has nothing to release.
+              [ "$GITHUB_EVENT_NAME" = push ] && exit 0
               exit 1
+            fi
+            if [ "$GITHUB_EVENT_NAME" = push ]; then
+              trailers=$(git log --format='%(trailers:key=Release,valueonly)' "$prev..HEAD")
+              if grep -qix major <<< "$trailers"; then BUMP=major
+              elif grep -qix minor <<< "$trailers"; then BUMP=minor
+              else BUMP=patch
+              fi
             fi
             if ! [[ "$prev" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
               echo "Can't bump $prev. Push a tag by hand instead." >&2
@@ -70,15 +89,18 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Select Xcode 26.6
+        if: steps.version.outputs.tag != ''
         run: |
           sudo xcode-select -s /Applications/Xcode_26.6.app
           swift --version
           xcodebuild -version
 
       - name: Build universal binary
+        if: steps.version.outputs.tag != ''
         run: swift build -c release --arch arm64 --arch x86_64
 
       - name: Bundle, sign and zip
+        if: steps.version.outputs.tag != ''
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
@@ -86,13 +108,15 @@ jobs:
             --binary .build/apple/Products/Release/Aeronaut
 
       - name: Check architectures
+        if: steps.version.outputs.tag != ''
         run: |
           echo "Architectures: $(lipo -archs dist/Aeronaut.app/Contents/MacOS/Aeronaut)"
 
       # The install steps live in the README, and GitHub shows each asset's
       # SHA-256, so the notes are the commits since the previous release.
-      # --target creates the tag when the workflow was run by hand.
+      # --target creates the tag when the workflow bumped the version.
       - name: Create release
+        if: steps.version.outputs.tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
