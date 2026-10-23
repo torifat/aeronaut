@@ -130,6 +130,10 @@ enum Theme {
 	/// The focus capsule's green opacity in the default `.translucent` style.
 	static let focusOpacity = 0.75
 
+	/// The calendar's time capsule at rest. It's lighter than the surface0 hover
+	/// ghost, so it doesn't read as hovered.
+	static let restCapsuleOpacity = 0.16
+
 	/// The focus capsule's slide: a little bounce, so it overshoots and settles.
 	static let focusSpring = Spring(duration: 0.38, bounce: 0.2)
 	static let animation = Animation.smooth(duration: 0.35)

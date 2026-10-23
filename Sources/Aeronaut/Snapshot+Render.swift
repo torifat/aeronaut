@@ -53,15 +53,22 @@ func renderSnapshot(to path: String, client: AeroSpaceClient) async throws {
 		("truncated", NextEvent(start: now.addingTimeInterval(2 * 3600), title: "🎉🎉 Launch party for the new Aeronaut release 🚀🚀")),
 		("none", nil),
 	]
-	func calendarRow(_ state: CalendarState, ring: Double? = nil) -> some View {
+	func calendarRow(_ state: CalendarState, ring: Double? = nil, style: CalendarStyle = settings.values.calendarStyle) -> some View {
 		HStack(spacing: 8) {
-			NextEventContent(state: state, isExpanded: false, ringFraction: ring)
-			NextEventContent(state: state, isExpanded: true, ringFraction: ring)
+			NextEventContent(state: state, isExpanded: false, ringFraction: ring, style: style)
+			NextEventContent(state: state, isExpanded: true, ringFraction: ring, style: style)
 		}
 	}
 	/// Urgent rows, `seconds` before the start, with the ring that many seconds in.
 	let slideTimes: [TimeInterval] = [0.1, 0.2, 0.3, SlideMotion.slide.duration]
 	let rings: [(Int, String)] = [(270, "Standup"), (120, "Design sync"), (45, "1:1 with Sam")]
+	let variants: [(String, CalendarStyle)] = [("capsule", .capsule), ("plain", .plain)]
+	let variantStates: [(NextEvent?, Double?)] = [
+		(NextEvent(start: now.addingTimeInterval(3 * 3600 + 120), title: "Review"), nil),
+		(NextEvent(start: now.addingTimeInterval(270), title: "Standup"), 270.0 / 300),
+		(NextEvent(start: now.addingTimeInterval(45), title: "1:1 Sam"), 45.0 / 300),
+		(nil, nil),
+	]
 	let view = VStack(alignment: .leading, spacing: 8) {
 		WorkspacesPill(snapshot: snapshot, style: settings.values.workspaces, focus: settings.values.focus, border: settings.border)
 		WorkspacesPill(snapshot: .sampleEmptyFocus, style: settings.values.workspaces, focus: settings.values.focus, border: settings.border)
@@ -83,6 +90,27 @@ func renderSnapshot(to path: String, client: AeroSpaceClient) async throws {
 				ring: Double(seconds) / 300
 			)
 		}
+		// Every calendar style, one column each, over four states.
+		HStack(alignment: .top, spacing: 16) {
+			ForEach(variants.indices, id: \.self) { column in
+				let (title, style) = variants[column]
+				VStack(alignment: .leading, spacing: 8) {
+					Text(title).font(Theme.label).foregroundStyle(Theme.text)
+					ForEach(variantStates.indices, id: \.self) { row in
+						let (event, ring) = variantStates[row]
+						VStack(alignment: .leading, spacing: 4) {
+							ForEach([false, true], id: \.self) { expanded in
+								NextEventContent(
+									state: CalendarState(event: event, now: now),
+									isExpanded: expanded, ringFraction: ring, style: style
+								)
+							}
+						}
+					}
+				}
+			}
+		}
+		.fixedSize()
 		ForEach(FocusStyle.allCases, id: \.self) { focus in
 			HStack(spacing: 8) {
 				WorkspacesPill(snapshot: snapshot, focus: focus)

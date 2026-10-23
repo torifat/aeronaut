@@ -65,11 +65,21 @@ struct CountdownSchedule: TimelineSchedule {
 	}
 }
 
+/// How the calendar pill is drawn.
+enum CalendarStyle: String, CaseIterable, Sendable {
+	/// The workspace pill's layout: a grey glyph, and the time in a capsule inset
+	/// in the pill. The capsule is a light fill at rest and the state colour when
+	/// yellow or red; the title is plain text.
+	case capsule
+	/// The earlier look: the glyph and the accent border take the state colour, and
+	/// the time and " • <title>" are plain text.
+	case plain
+}
+
 /// The pill's look for a given state, with no behaviour of its own: a calendar
-/// glyph and the time, plus " • <title>" when expanded. The glyph takes the
-/// state colour. `ringFraction` draws a coloured ring covering that fraction of
-/// the outline, clockwise from the top centre, over a neutral track that
-/// replaces `border` while it shows.
+/// glyph and the time, plus the title when expanded. `ringFraction` draws a
+/// coloured ring covering that fraction of the outline, clockwise from the top
+/// centre, over a neutral track that replaces `border` while it shows.
 struct NextEventContent: View {
 	let state: CalendarState
 	let isExpanded: Bool
@@ -77,14 +87,55 @@ struct NextEventContent: View {
 	/// Pill backing; see `PillMaterial`.
 	var material = PillMaterial.flat // snapshots stay flat
 	var border = Settings.shared.border
+	var style = Settings.shared.values.calendarStyle
 
 	/// With nothing to the right of it, the icon gets the pill's usual end padding.
 	private var iconOnly: Bool {
 		state.timeText == nil && !isExpanded
 	}
 
+	/// Blue is the pill at rest, which `capsule` leaves neutral.
+	private var isAtRest: Bool {
+		state.tint == .blue
+	}
+
+	/// The time capsule's fill.
+	private var capsuleFill: Color {
+		isAtRest ? Color.white.opacity(Theme.restCapsuleOpacity) : state.tint.color.opacity(FocusStyle.translucentOpacity)
+	}
+
 	var body: some View {
+		switch style {
+		case .plain: outlined(plainContent, accent: state.tint.color)
+		case .capsule: outlined(capsuleContent, accent: isAtRest ? Theme.border : state.tint.color)
+		}
+	}
+
+	/// The pill's shape, material, border and countdown ring around `content`.
+	/// The ring runs on the outline and replaces `border` while it shows.
+	private func outlined<Content: View>(_ content: Content, accent: Color) -> some View {
 		let shape = RoundedRectangle(cornerRadius: 16)
+		return content
+			.frame(height: Theme.pillHeight)
+			.clipShape(shape)
+			.pillBackground(shape, material: material, border: ringFraction == nil ? border : material.isFlat ? .neutral : .none, accent: accent)
+			.overlay {
+				if !material.isFlat, ringFraction != nil {
+					PillOutline(inset: 0.5).stroke(Theme.glassTrack, lineWidth: 1)
+				}
+			}
+			.overlay {
+				if let fraction = ringFraction, fraction > 0 {
+					PillOutline(inset: 0.5)
+						.trim(from: 1 - fraction, to: 1)
+						.stroke(state.tint.color, style: StrokeStyle(lineWidth: 1, lineCap: .round))
+						.animation(.linear(duration: 1), value: fraction)
+				}
+			}
+			.contentShape(shape)
+	}
+
+	private var plainContent: some View {
 		HStack(spacing: 0) {
 			Text("\u{F00F6}")
 				.font(Theme.symbol)
@@ -115,23 +166,38 @@ struct NextEventContent: View {
 				.padding(.trailing, 12)
 			}
 		}
-		.frame(height: Theme.pillHeight)
-		.clipShape(shape)
-		.pillBackground(shape, material: material, border: ringFraction == nil ? border : material.isFlat ? .neutral : .none, accent: state.tint.color)
-		.overlay {
-			if !material.isFlat, ringFraction != nil {
-				PillOutline(inset: 0.5).stroke(Theme.glassTrack, lineWidth: 1)
+	}
+
+	private var capsuleContent: some View {
+		HStack(spacing: 0) {
+			Text("\u{F00F6}")
+				.font(Theme.symbol)
+				.foregroundStyle(Theme.grey)
+				.tracking(Theme.symbolOverhang)
+				.padding(.leading, 12)
+				.padding(.trailing, iconOnly ? 12 : 6)
+			if let timeText = state.timeText {
+				Text(timeText)
+					.font(Theme.label)
+					.foregroundStyle(isAtRest ? Theme.text : Theme.onAccent)
+					.contentTransition(.numericText())
+					.fixedSize()
+					.padding(.horizontal, 8)
+					.frame(height: Theme.focusHeight)
+					.background(Capsule().fill(capsuleFill))
+					// Collapsed, the capsule's end sits `focusMargin` from the pill's edge.
+					.padding(.trailing, isExpanded ? 0 : Theme.focusMargin)
+			}
+			if isExpanded {
+				Text(state.detail)
+					.font(Theme.label)
+					.foregroundStyle(state.timeText == nil ? Theme.grey : Theme.text)
+					.fixedSize()
+					.padding(.leading, state.timeText == nil ? 0 : 6)
+					.padding(.trailing, 12)
+					.transition(.move(edge: .trailing).combined(with: .opacity))
 			}
 		}
-		.overlay {
-			if let fraction = ringFraction, fraction > 0 {
-				PillOutline(inset: 0.5)
-					.trim(from: 1 - fraction, to: 1)
-					.stroke(state.tint.color, style: StrokeStyle(lineWidth: 1, lineCap: .round))
-					.animation(.linear(duration: 1), value: fraction)
-			}
-		}
-		.contentShape(shape)
 	}
 }
 
@@ -145,6 +211,7 @@ struct NextEventPill: View {
 	let state: CalendarState
 	var material = PillMaterial.flat // snapshots stay flat
 	var border = Settings.shared.border
+	var style = Settings.shared.values.calendarStyle
 	var onSelect: @MainActor () -> Void = {}
 
 	/// Why the pill is open besides urgency. An object rather than `@State`
@@ -180,7 +247,7 @@ struct NextEventPill: View {
 	var body: some View {
 		Button(action: onSelect) {
 			TimelineView(schedule) { context in
-				NextEventContent(state: state, isExpanded: isExpanded, ringFraction: ringFraction(at: context.date), material: material, border: border)
+				NextEventContent(state: state, isExpanded: isExpanded, ringFraction: ringFraction(at: context.date), material: material, border: border, style: style)
 			}
 			.scaleEffect(triggers.isPulsing ? 1.05 : 1)
 		}

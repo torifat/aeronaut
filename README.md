@@ -13,7 +13,7 @@ The workspace pill sits top-left:
 
 The calendar pill sits top-right:
 
-- It shows the time until your next timed event, such as "in 7h", with a border that turns yellow at 5 minutes and red at 1 minute.
+- It shows the time until your next timed event, such as "in 7h", in a capsule that's neutral, then yellow at 5 minutes and red at 1 minute.
 - It expands to show the event's title on hover, for the last 5 minutes before the event, and briefly whenever the next event changes.
 - Clicking it opens Calendar.
 
@@ -70,13 +70,13 @@ material = "frost"        # frost | flat | glass | clear-glass
 tint = 0.45               # 0 to 1: dark tint over the material
 border = "accent"         # none | neutral | accent
 border-opacity = 0.6      # 0 to 1, for the accent border
+focus-opacity = 0.75      # 0 to 1: fill of the translucent workspace capsule and the calendar's yellow and red one
+focus-margin = 4          # 0 to 6: gap between those capsules and the pill's edge
 
 [workspaces]
 style = "compact"         # compact | all (every workspace shows its icons)
 focus = "translucent"     # translucent | solid | glossy | tint | outline | underline
-focus-opacity = 0.75      # 0 to 1, for translucent
 icon-size = 16            # 12 to 20
-focus-margin = 4          # 0 to 6: gap between the green capsule and the pill's edge
 focus-padding = "auto"    # "auto" (a lone icon sits in a circle) or 0 to 12
 accent = "green"          # a Catppuccin Mocha name (teal, sky, mauve, peach, â€¦) or "#rrggbb"
 
@@ -84,6 +84,7 @@ accent = "green"          # a Catppuccin Mocha name (teal, sky, mauve, peach, â€
 font = "pixel"            # pixel | rounded | mono | sf
 
 [calendar]
+style = "capsule"         # capsule | plain
 icon-size = 17            # 12 to 22
 ```
 

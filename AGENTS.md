@@ -134,15 +134,18 @@ Aeronaut must look right with no config file at all. The file only overrides the
 | `[pill]` | `tint` | 0 to 1 (frost 0.45, glass 0.55) |
 | `[pill]` | `border` | `accent`, `neutral`, `none` |
 | `[pill]` | `border-opacity` | 0 to 1 (0.6) |
+| `[pill]` | `focus-opacity` | 0 to 1 (0.75): the fill of the workspace focus capsule and the calendar's yellow and red capsule |
+| `[pill]` | `focus-margin` | 0 to 6 (4): the gap between those capsules and the pill's edge |
 | `[workspaces]` | `style` | `compact`, `all` |
 | `[workspaces]` | `focus` | `translucent`, `solid`, `glossy`, `tint`, `outline`, `underline` |
-| `[workspaces]` | `focus-opacity` | 0 to 1 (0.75) |
-| `[workspaces]` | `focus-margin` | 0 to 6 (4): the gap between the capsule and the pill's edge |
 | `[workspaces]` | `focus-padding` | `"auto"`, or 0 to 12 |
 | `[workspaces]` | `accent` | A Catppuccin Mocha name (`green`, then rosewater to lavender) or `"#rrggbb"` / `"#aarrggbb"` |
 | `[workspaces]` | `icon-size` | 12 to 20 (16) |
 | `[text]` | `font` | `pixel`, `rounded`, `mono`, `sf` |
+| `[calendar]` | `style` | `capsule`, `plain` |
 | `[calendar]` | `icon-size` | 12 to 22 (17) |
+
+`focus-opacity` and `focus-margin` are shared by both pills' capsules. They used to live under `[workspaces]`, which still works with a warning. The old entries sit at the end of the table in `Config.swift` and have no env var.
 
 ### Visuals
 
@@ -206,8 +209,12 @@ The palette is Catppuccin Mocha. Colour only appears where it means something: t
 - **Hover** comes from `HoverTracker`, an `NSTrackingArea` with `.activeAlways`, because SwiftUI's `onHover` may not fire in a panel of an app that's never active. While the cursor is inside, it also checks the cursor position every 0.2 s, because exits can be missed while the panel is ignoring mouse events.
 - **Glyph:** U+F00F6 in "Liga SFMono Nerd Font" (Pixel Code lacks it), 17 pt by default. A smaller glyph makes the pill look shorter than the workspace pill, even though both are 30 pt.
   - The glyph's ink is wider than its advance, and the live `NSHostingView` clips text to its advance. `.tracking(Theme.symbolOverhang)` widens the Text to fit, with the overhang measured with CoreText for the current size (1.85 pt at 14, 2.24 pt at 17). `.frame(width:)` doesn't help, because the Text still clips to its own bounds.
-- **State colours** show in the glyph and the accent border: blue at rest, yellow at 5 minutes or less, red at 1 minute or less. The label is Catppuccin text, and the " • " separator overlay1.
-- **Countdown ring:** while urgent, the border becomes a ring that drains clockwise from twelve o'clock, like a clock hand.
+- **Styles** (`[calendar] style`):
+  - **`capsule`**, the default, has the workspace pill's layout. The pill keeps its material and the time sits in a capsule inset in it, `Theme.focusHeight` tall with 8 pt of padding either side, and `focus-margin` from the pill's end when collapsed. The glyph is `Theme.grey` in every state, and the title is Catppuccin text, or grey for "No events". There's no " • " separator, because the capsule separates them.
+  - **State colours in `capsule`:** at rest (blue) the capsule is white at 0.16 (`Theme.restCapsuleOpacity`) with Catppuccin text, and the border is `Theme.border`, so there's no blue anywhere. That's lighter than the surface0 hover ghost, so it doesn't read as hovered. At 5 minutes or less the capsule is yellow, and at 1 minute or less red, at `focus-opacity` with dark text, and the border takes the tint.
+  - **`plain`** is the earlier look: blue at rest, yellow at 5 minutes or less and red at 1 minute or less in the glyph and the accent border. The label is Catppuccin text with the " • " separator in overlay1.
+  - **Rejected:** filling the whole pill with the state colour and cutting the time out of it (fill, frost, fill). It put colour on the pill at rest, lost the shared frost, and cramped the ring.
+- **Countdown ring:** while urgent, the border becomes a ring that drains clockwise from twelve o'clock, like a clock hand, in both styles.
   - `PillOutline` is a capsule path starting at the top centre, drawn with `trim(from: 1 - fraction, to: 1)`.
   - The ring is drawn over a neutral track, never over the accent border, or the drained part would stay tinted.
   - `CountdownSchedule` drives a `TimelineView` once a second, only while urgent, with a 1 s linear trim animation between ticks.

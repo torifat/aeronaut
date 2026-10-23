@@ -99,7 +99,7 @@ private struct RightBar: View {
 		let settings = Settings.shared
 		return HStack(spacing: 0) {
 			Spacer(minLength: 0)
-			NextEventPill(state: store.state, material: settings.material, border: settings.border, onSelect: store.openCalendar)
+			NextEventPill(state: store.state, material: settings.material, border: settings.border, style: settings.values.calendarStyle, onSelect: store.openCalendar)
 		}
 		.padding(.trailing, 8)
 		.frame(maxWidth: .infinity, maxHeight: .infinity)

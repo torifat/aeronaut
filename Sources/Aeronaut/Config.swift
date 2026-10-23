@@ -28,6 +28,7 @@ struct SettingsValues: Equatable, Sendable {
 	var focusMargin = 4.0
 	var font = FontChoice.pixel
 	var calendarIconSize = 17.0
+	var calendarStyle = CalendarStyle.capsule
 	/// The workspace pill's accent, as 0xAARRGGBB.
 	var accent: UInt32 = 0xffa6_e3a1
 	/// `nil` is "auto": the capsule's horizontal padding matches its vertical inset.
@@ -215,6 +216,18 @@ enum ConfigParser {
 		}
 	}
 
+	/// A number that moved from [workspaces] to [pill]: stores like the new key,
+	/// and warns so the file gets updated.
+	private static func moved(
+		_ key: String, _ range: ClosedRange<Double>,
+		store: @escaping @Sendable (inout SettingsValues, Double) -> Void
+	) -> Setting {
+		let current = number("workspaces", key, range, store: store)
+		return Setting(section: "workspaces", key: key, env: nil, translate: nil) { value, values in
+			current.set(value, &values) ?? "'\(key)' has moved to [pill]; it still works here for now"
+		}
+	}
+
 	private static let settings: [Setting] = [
 		choice("pill", "material", env: "AERONAUT_GLASS", translate: {
 			switch $0 {
@@ -226,10 +239,10 @@ enum ConfigParser {
 		number("pill", "tint", 0...1, env: "AERONAUT_GLASS_TINT") { $0.tint = $1 },
 		choice("pill", "border", env: "AERONAUT_BORDER") { $0.border = $1 },
 		number("pill", "border-opacity", 0...1, env: "AERONAUT_BORDER_OPACITY") { $0.borderOpacity = $1 },
+		number("pill", "focus-opacity", 0...1, env: "AERONAUT_FOCUS_OPACITY") { $0.focusOpacity = $1 },
+		number("pill", "focus-margin", SettingsValues.focusMarginRange, env: "AERONAUT_FOCUS_MARGIN") { $0.focusMargin = $1 },
 		choice("workspaces", "style", env: "AERONAUT_WORKSPACES") { $0.workspaces = $1 },
 		choice("workspaces", "focus", env: "AERONAUT_FOCUS") { $0.focus = $1 },
-		number("workspaces", "focus-opacity", 0...1, env: "AERONAUT_FOCUS_OPACITY") { $0.focusOpacity = $1 },
-		number("workspaces", "focus-margin", SettingsValues.focusMarginRange, env: "AERONAUT_FOCUS_MARGIN") { $0.focusMargin = $1 },
 		number("workspaces", "icon-size", SettingsValues.iconSizeRange, env: "AERONAUT_ICON_SIZE") { $0.iconSize = $1 },
 		Setting(section: "workspaces", key: "accent", env: "AERONAUT_ACCENT", translate: nil) { value, values in
 			guard case .string(let text) = value else { return "'accent' expects a string, got \(value.kind)" }
@@ -254,7 +267,13 @@ enum ConfigParser {
 			}
 		},
 		number("calendar", "icon-size", SettingsValues.calendarIconSizeRange, env: "AERONAUT_CALENDAR_ICON_SIZE") { $0.calendarIconSize = $1 },
+		choice("calendar", "style", env: "AERONAUT_CALENDAR_STYLE") { $0.calendarStyle = $1 },
 		choice("text", "font", env: "AERONAUT_FONT") { $0.font = $1 },
+		// `focus-opacity` and `focus-margin` started in [workspaces]. Old configs
+		// keep working, with a warning; they have no env var, so the variables
+		// only ever reach the [pill] entries.
+		moved("focus-opacity", 0...1) { $0.focusOpacity = $1 },
+		moved("focus-margin", SettingsValues.focusMarginRange) { $0.focusMargin = $1 },
 	]
 
 	/// Stores one value, or returns what's wrong with it.
