@@ -17,13 +17,13 @@ The calendar pill sits top-right:
 - It expands to show the event's title on hover, for the last 5 minutes before the event, and briefly whenever the next event changes.
 - Clicking it opens Calendar.
 
-State comes from `aerospace subscribe --all` events, backed by a 5-second refresh for changes AeroSpace doesn't report. App icons use [sketchybar-app-font](https://github.com/kvndrsslr/sketchybar-app-font) ligatures, mapped through `Sources/Aeronaut/Resources/icon_map.json`.
+State comes from `aerospace subscribe --all` events, backed by a 5-second refresh for changes AeroSpace doesn't report. App icons use [sketchybar-app-font](https://github.com/kvndrsslr/sketchybar-app-font) ligatures. The font and its `icon_map.json` ship inside the app, so you don't need the font installed.
 
 ## Requirements
 
 - macOS 14 or later
 - AeroSpace with `aerospace` on `PATH`, or at a Nix or Homebrew location (override with `AERONAUT_AEROSPACE=/path/to/aerospace`)
-- The fonts `Pixel Code`, `sketchybar-app-font` and `Liga SFMono Nerd Font` (for the calendar icon)
+- The fonts `Pixel Code` and `Liga SFMono Nerd Font` (for the calendar icon)
 - Calendar access, which macOS asks for on first launch (under `swift run`, it asks for your terminal)
 
 ## Installation
@@ -57,6 +57,8 @@ swift run Aeronaut --snapshot pill.png
 ```
 
 To build the app bundle yourself, run `scripts/bundle.sh --version 0.1.0`. It builds a release binary, then writes `dist/Aeronaut.app` (signed ad-hoc) and `dist/Aeronaut-0.1.0.zip`. `--binary PATH` uses a prebuilt executable and `--out DIR` changes the output directory.
+
+To pull the latest app icons, run `swift scripts/update-icons.swift`. It downloads the font and `icon_map.json` from the newest sketchybar-app-font release into `Sources/Aeronaut/Resources/`. Pass a tag such as `v3.0.12` to pin a release instead.
 
 ## Configuration
 

@@ -109,7 +109,7 @@ enum Theme {
 	}
 	/// `[workspaces] icon-size` in points.
 	@MainActor static var appIconSize: CGFloat { CGFloat(Settings.shared.values.iconSize) }
-	@MainActor static var appIcon: Font { .custom(appIconFont, size: appIconSize) }
+	@MainActor static var appIcon: Font { Font(AppIcons.font(size: appIconSize)) }
 
 	/// The pills' base colour without its alpha, which the glass tint supplies instead.
 	static let glassBase = Color(argb: 0xff1e_1e2e)

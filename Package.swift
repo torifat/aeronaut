@@ -7,7 +7,11 @@ let package = Package(
 	targets: [
 		.executableTarget(
 			name: "Aeronaut",
-			resources: [.copy("Resources/icon_map.json")]
+			exclude: ["Resources/sketchybar-app-font.version"],
+			resources: [
+				.copy("Resources/icon_map.json"),
+				.copy("Resources/sketchybar-app-font.ttf"),
+			]
 		),
 	]
 )

@@ -46,6 +46,7 @@ mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 
 cp "$binary" "$app/Contents/MacOS/Aeronaut"
 cp Sources/Aeronaut/Resources/icon_map.json "$app/Contents/Resources/icon_map.json"
+cp Sources/Aeronaut/Resources/sketchybar-app-font.ttf "$app/Contents/Resources/sketchybar-app-font.ttf"
 
 swift scripts/icon.swift "$tmp"
 cp "$tmp/AppIcon.icns" "$app/Contents/Resources/AppIcon.icns"

@@ -23,7 +23,7 @@ swift run Aeronaut --snapshot pill.png  # render every pill state once and exit
 ```
 
 Quirks of this toolchain:
-- **Sandboxes:** in sandboxed agent environments, `swift build` can fail because xcrun can't write its cache under `/var/folders`. Run builds unsandboxed.
+- **Sandboxes:** in sandboxed agent environments, `swift build` and the Swift scripts can fail because xcrun can't write its cache under `/var/folders`. Run them unsandboxed.
 - **Linker warning:** the linker warns that `Developer/usr/lib` and `Developer/Library/Frameworks` are missing. Those are Xcode-only XCTest paths, so the warning is harmless.
 - **No `@State`.** In current SDKs it's a macro, and the Command Line Tools ship without the `SwiftUIMacros` plugin ("external macro implementation type 'SwiftUIMacros.StateMacro' could not be found"). Hold view state in an `ObservableObject` with `@StateObject`, as `NextEventPill` does. `@Entry` and `@Previewable` are affected too. `@Observable` works, because its macro plugin ships with Swift.
 - **No `if flag, #available(macOS 26, *)` in a `@ViewBuilder`.** It crashes the compiler with "failed to produce diagnostic". Nest the checks (`if flag { if #available … }`) and move each branch into its own helper.
@@ -68,7 +68,7 @@ Point `AERONAUT_AEROSPACE` at a fake `aerospace` script. It answers `list-worksp
 | `Settings.swift` | `Settings.shared`, the `@Observable` store every view reads its look from |
 | `ConfigWatcher.swift` | Watches the config directory and reloads on save, debounced by 100 ms |
 | `Theme.swift` | Catppuccin Mocha colours, fonts, sizes, materials (`pillBackground`) and animation constants |
-| `AppIcons.swift` | App name to sketchybar-app-font ligature, from `Resources/icon_map.json`, plus measured ink widths |
+| `AppIcons.swift` | App name to sketchybar-app-font ligature, from `Resources/icon_map.json`. Loads the bundled font and measures ink widths |
 | `Snapshot+Render.swift` | Sample data and the PNG renderer |
 
 ### AeroSpace integration
@@ -158,8 +158,8 @@ The palette is Catppuccin Mocha. Colour only appears where it means something: t
 - **What's shown:** each workspace that has windows, plus the focused one.
 - **Unfocused numbers** are Pixel Code 14 in `Theme.grey` (overlay1, 4.4:1 contrast). They're deliberately subdued, because they orient rather than inform, and brighter numbers read as noise. Don't brighten them.
 - **The focused workspace** shows its app icons on the accent capsule, without its number: the capsule already marks it. An empty focused workspace shows its number in the capsule instead. The number scales and fades out as the capsule arrives, and stays grey meanwhile, so it never flashes dark.
-- **Icons:** sketchybar-app-font, 16 pt by default. The focused window's icon is drawn at full opacity and the rest at 0.4.
-  - Every glyph in this font advances about 1.41 em but draws within the first em, and some draw in less (Ghostty is 12 pt wide). `AppIcons.inkWidth(of:)` measures each glyph once with CoreText, cached per size, and `AppIcon` is boxed to that width, so spacing is even.
+- **Icons:** the bundled sketchybar-app-font, 16 pt by default. The focused window's icon is drawn at full opacity and the rest at 0.4.
+  - Every glyph in this font advances about 1.41 em but draws within the first em, and some, such as Ghostty, draw in less. `AppIcons.inkWidth(of:)` measures each glyph once with CoreText, cached per size, and `AppIcon` is boxed to that width, so spacing is even.
   - Icons are 6 pt apart.
 - **Capsule geometry:**
   - The capsule is `Theme.focusHeight` tall: the pill height minus twice `focus-margin`.
@@ -222,9 +222,12 @@ A green blimp: the app's pill as an airship. Its gondola is a tiny workspace pil
 - The tail has top and bottom fins only.
 - `scripts/icon.swift` draws it in CoreGraphics on Apple's continuous-corner 824 pt squircle. Run `swift scripts/icon.swift <outdir>` to write `AppIcon.iconset/`, `AppIcon.icns` and `AppIcon-1024.png`. Generated icons are gitignored, and the bundle step generates them.
 
-### Icon map
+### Icon map and font
 
-`Resources/icon_map.json` comes from [sketchybar-app-font](https://github.com/kvndrsslr/sketchybar-app-font)'s `dist/icon_map.json`, which is CC0. It must match the font version that's installed. If a glyph renders as the default icon, check that the two agree.
+`Resources/icon_map.json` and `Resources/sketchybar-app-font.ttf` come from the same [sketchybar-app-font](https://github.com/kvndrsslr/sketchybar-app-font) release. The font is CC0, so it can ship in the app. `Resources/sketchybar-app-font.version` records which release it is.
+- **Updating:** `swift scripts/update-icons.swift [TAG]` pulls the latest release, or TAG (`v3.0.12` or `3.0.12`). Before it replaces anything, it checks each download against the SHA-256 digest GitHub lists for it, and checks that every icon in the map resolves to a single glyph in the font. It then prints the old and new versions and any app names the new map dropped. Set `GITHUB_TOKEN` if the API rate-limits you.
+- **The app only uses the bundled font.** `AppIcons` builds the icon font from the bundled file. It also registers that file for the process, so a lookup by name finds it before any installed copy. An installed copy can be any version, and when it's older than the map, icons it lacks don't render as icons.
+- **Default icon:** an app missing from the map shows `:default:`. Upstream adds apps often, so updating may be enough.
 
 ## Known limitation: window order
 
@@ -241,10 +244,10 @@ Upstream discussion is in nikitabobko/AeroSpace#491, with PRs #1932 (`--sort`) a
 ### 1. App bundle (implemented)
 
 `scripts/bundle.sh --version X.Y.Z [--binary PATH] [--out DIR]` is the one bundling script, used by local builds and CI. Without `--binary` it runs `swift build -c release` for the native architecture. It writes `DIR/Aeronaut.app` (default `dist/`, which is gitignored) and `DIR/Aeronaut-<version>.zip`, then prints the zip's SHA-256.
-- **Contents:** `Contents/Info.plist`, `Contents/MacOS/Aeronaut`, `Contents/Resources/icon_map.json` and `Contents/Resources/AppIcon.icns`, generated by `scripts/icon.swift`.
+- **Contents:** `Contents/Info.plist`, `Contents/MacOS/Aeronaut`, `Contents/Resources/icon_map.json`, `Contents/Resources/sketchybar-app-font.ttf` and `Contents/Resources/AppIcon.icns`, generated by `scripts/icon.swift`.
 - **`Info.plist`:** `CFBundleIdentifier` `dev.rifat.aeronaut`, `CFBundleIconFile` `AppIcon`, `LSUIElement` true, `LSMinimumSystemVersion` 14.0, `NSCalendarsFullAccessUsageDescription`, and the version for `CFBundleShortVersionString` and `CFBundleVersion`. It's checked with `plutil -lint`.
 - **Signing:** ad-hoc (`codesign --force --deep --sign -`), then `codesign --verify --strict`. It doesn't use the hardened runtime, which would need the `com.apple.security.personal-information.calendars` entitlement for Calendar access. There's no notarization.
-- **Resources:** `Bundle.module` won't work in a signed `.app`. SwiftPM's generated accessor looks for `Aeronaut_Aeronaut.bundle` at the `.app` root, and codesign rejects anything there. `AppIcons` loads `icon_map.json` from `Bundle.main` first and only falls back to `Bundle.module` for `swift run`. `Bundle.module` calls `fatalError` when it can't find its bundle, so the `Bundle.main` check has to come first. Keep any new resource lookup the same way.
+- **Resources:** `Bundle.module` won't work in a signed `.app`. SwiftPM's generated accessor looks for `Aeronaut_Aeronaut.bundle` at the `.app` root, and codesign rejects anything there. `AppIcons` loads `icon_map.json` and the font from `Bundle.main` first and only falls back to `Bundle.module` for `swift run`. `Bundle.module` calls `fatalError` when it can't find its bundle, so the `Bundle.main` check has to come first. Keep any new resource lookup the same way.
 
 ### 2. Release CI (implemented)
 
