@@ -252,9 +252,13 @@ Upstream discussion is in nikitabobko/AeroSpace#491, with PRs #1932 (`--sort`) a
 
 ### 2. Release CI (implemented)
 
-`.github/workflows/release.yml` runs on pushed `v*` tags, with `contents: write`.
+`.github/workflows/release.yml` has `contents: write` and two triggers:
+- **Run workflow** (from the Actions tab, on `main`) takes a `bump` of `patch` (the default), `minor` or `major`. It bumps the newest `v*` tag, builds, then creates the tag and the release together. It refuses to run from another branch, when `main` is already tagged, or when the newest tag isn't plain `vX.Y.Z`.
+- **A pushed `v*` tag** releases that tag as is.
 - **Runner:** `macos-26` (arm64), with Xcode 26.6 selected explicitly through `xcode-select`. That's Swift 6.3.3, older than a current Command Line Tools install (6.4), so don't use language features newer than CI's compiler. v0.1.0 built cleanly on it. The code uses macOS 26 SDK APIs (Liquid Glass) behind `#available`, so it needs Xcode 26 to compile. The log prints `swift --version` and `xcodebuild -version`.
-- **Steps:** check out, `swift build -c release --arch arm64 --arch x86_64` (output in `.build/apple/Products/Release/Aeronaut`), `scripts/bundle.sh --version "${GITHUB_REF_NAME#v}" --binary ...`, print `lipo -archs`, then `gh release create` with the zip and generated notes (SHA-256, install steps, the Gatekeeper note and the ad-hoc signing note).
+- **Steps:** check out with full history, work out the version, `swift build -c release --arch arm64 --arch x86_64` (output in `.build/apple/Products/Release/Aeronaut`), `scripts/bundle.sh --version X.Y.Z --binary ...`, print `lipo -archs`, then `gh release create --target <sha>` with the zip.
+- **Notes:** the commit subjects since the previous tag (merges left out), a link to the README's install steps and a line about re-granting Calendar access. Install steps stay in the README only, and GitHub already shows each asset's SHA-256.
+- **Tags made by the workflow don't trigger it again.** GitHub doesn't start workflows for events caused by `GITHUB_TOKEN`, so the dispatch path doesn't also run the tag path.
 - **Signing:** v0.1.x is ad-hoc signed. An ad-hoc signature's designated requirement is its cdhash, so macOS drops the Calendar grant on every update, and users re-grant Calendar access after upgrading. A later release should sign with a stable self-signed certificate, imported from a CI secret into a temporary keychain, so the grant survives.
 
 ### 3. Packaging

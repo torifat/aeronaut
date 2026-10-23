@@ -1,11 +1,24 @@
 name: Release
 
+# Run this from the Actions tab on main and pick which part of the version to
+# bump: it builds, tags and publishes in one go. Pushing a v* tag by hand
+# releases that tag instead.
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Part of the last release's version to bump"
+        type: choice
+        options: [patch, minor, major]
+        default: patch
 
 permissions:
   contents: write
+
+concurrency:
+  group: release
 
 jobs:
   release:
@@ -13,7 +26,48 @@ jobs:
     # macOS 26 SDK APIs (Liquid Glass) need.
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      # Full history and tags: the version and the notes come from the
+      # previous tag. gh gets the token from GH_TOKEN, so git doesn't need it.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Work out the version
+        id: version
+        env:
+          BUMP: ${{ inputs.bump }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            tag=$GITHUB_REF_NAME
+            prev=$(git describe --tags --abbrev=0 --match 'v[0-9]*' "$tag^" 2>/dev/null || true)
+          else
+            if [ "$GITHUB_REF" != refs/heads/main ]; then
+              echo "Release from main, not $GITHUB_REF." >&2
+              exit 1
+            fi
+            prev=$(git describe --tags --abbrev=0 --match 'v[0-9]*')
+            if [ "$(git rev-list -n 1 "$prev")" = "$(git rev-parse HEAD)" ]; then
+              echo "main is already released as $prev." >&2
+              exit 1
+            fi
+            if ! [[ "$prev" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              echo "Can't bump $prev. Push a tag by hand instead." >&2
+              exit 1
+            fi
+            major=${BASH_REMATCH[1]} minor=${BASH_REMATCH[2]} patch=${BASH_REMATCH[3]}
+            case "$BUMP" in
+              major) tag="v$((major + 1)).0.0" ;;
+              minor) tag="v$major.$((minor + 1)).0" ;;
+              *) tag="v$major.$minor.$((patch + 1))" ;;
+            esac
+          fi
+          echo "Releasing $tag, previous ${prev:-none}"
+          {
+            echo "tag=$tag"
+            echo "version=${tag#v}"
+            echo "prev=$prev"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Select Xcode 26.6
         run: |
@@ -25,31 +79,34 @@ jobs:
         run: swift build -c release --arch arm64 --arch x86_64
 
       - name: Bundle, sign and zip
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          scripts/bundle.sh --version "${GITHUB_REF_NAME#v}" \
+          scripts/bundle.sh --version "$VERSION" \
             --binary .build/apple/Products/Release/Aeronaut
 
       - name: Check architectures
         run: |
           echo "Architectures: $(lipo -archs dist/Aeronaut.app/Contents/MacOS/Aeronaut)"
 
+      # The install steps live in the README, and GitHub shows each asset's
+      # SHA-256, so the notes are the commits since the previous release.
+      # --target creates the tag when the workflow was run by hand.
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          PREV: ${{ steps.version.outputs.prev }}
         run: |
           zip=$(ls dist/Aeronaut-*.zip)
-          sha=$(shasum -a 256 "$zip" | cut -d' ' -f1)
-          cat > "$RUNNER_TEMP/notes.md" <<NOTES
-          SHA-256: \`$sha\`
-
-          ## Install
-
-          1. Unzip \`$(basename "$zip")\` and move \`Aeronaut.app\` to /Applications.
-          2. The app isn't notarized, so Gatekeeper blocks the first launch. Right-click it and choose Open, or run \`xattr -dr com.apple.quarantine /Applications/Aeronaut.app\`.
-          3. Allow Calendar access when macOS asks.
-
-          0.1.x releases are ad-hoc signed, so macOS asks for Calendar access again after each update.
-          NOTES
-          gh release create "$GITHUB_REF_NAME" "$zip" \
-            --title "Aeronaut $GITHUB_REF_NAME" \
+          {
+            echo "## Changes"
+            echo
+            git log --reverse --no-merges --format='- %s' ${PREV:+"$PREV..HEAD"}
+            echo
+            echo "Install steps are in the [README](https://github.com/$GITHUB_REPOSITORY#installation). Releases are ad-hoc signed, so macOS asks for Calendar access again after each update."
+          } > "$RUNNER_TEMP/notes.md"
+          gh release create "$TAG" "$zip" \
+            --target "$GITHUB_SHA" \
+            --title "Aeronaut $TAG" \
             --notes-file "$RUNNER_TEMP/notes.md"
