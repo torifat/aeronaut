@@ -1,6 +1,6 @@
-<img src="docs/icon.png" align="right" width="128" height="128" alt="Aeronaut's icon, a green blimp">
-
 # Aeronaut
+
+<img src="docs/icon.png" align="right" width="128" height="128" alt="Aeronaut's icon, a green blimp">
 
 A small SwiftUI status bar for macOS and [AeroSpace](https://github.com/nikitabobko/AeroSpace), replacing a sketchybar setup.
 
@@ -96,6 +96,10 @@ style = "capsule"         # capsule | plain
 icon-size = 17            # 12 to 22
 ```
 
+For example, `focus-margin = 0` under `[pill]` makes the focus capsule fill the pill's height:
+
+<img src="docs/focus-margin-0.png" width="204" alt="The workspace pill with focus-margin = 0. The green capsule runs the full height of the pill.">
+
 If a line is invalid, Aeronaut prints a warning naming the line and uses that option's default. `glass` and `clear-glass` use Liquid Glass (macOS 26). In a status bar panel it currently renders flat, so `frost` is the recommended material.
 
 ## Layout
@@ -115,5 +119,4 @@ If a line is invalid, Aeronaut prints a warning naming the line and uses that op
 
 ## Roadmap
 
-- Nix packaging and a launchd agent
 - Per-monitor pills

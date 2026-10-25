@@ -6,7 +6,8 @@
 //   swift scripts/readme-media.swift [--binary PATH] [--out DIR] [--format gif|apng] [--frames DIR]
 // Without --binary it runs `swift build -c release` and uses .build/release/Aeronaut. The terminal
 // needs Screen Recording permission, and no other Aeronaut may be running.
-// Writes <out>/workspaces.gif, <out>/calendar.gif (.png for apng) and <out>/icon.png.
+// Writes <out>/workspaces.gif, <out>/calendar.gif (.png for apng), <out>/focus-margin-0.png (a still of
+// the workspace pill with `stillConfig`) and <out>/icon.png.
 // --frames DIR also writes one contact sheet per clip, to check the frames as stills.
 
 import AppKit
@@ -65,6 +66,14 @@ let fakeWindows: [(id: Int, app: String, workspace: String)] = [
 ]
 let startFocus = (workspace: "2", window: 21)
 
+/// The config.toml for the still, shown on the same start state. Swap it to show another setting.
+let stillName = "focus-margin-0"
+let stillConfig = """
+[pill]
+focus-margin = 0
+
+"""
+
 // Catppuccin Mocha
 let base = 0x1e1e2e, mauve = 0xcba6f7, blue = 0x89b4fa, peach = 0xfab387, teal = 0x94e2d5
 
@@ -110,6 +119,12 @@ final class Session {
 
 	/// Stops Aeronaut and takes the backdrop down.
 	func stopCapture() {
+		stopAeronaut()
+		backdrop?.orderOut(nil)
+		backdrop = nil
+	}
+
+	func stopAeronaut() {
 		if let process = aeronaut, process.isRunning {
 			process.terminate()
 			let deadline = Date().addingTimeInterval(2)
@@ -125,8 +140,6 @@ final class Session {
 			try? pkill.run()
 			pkill.waitUntilExit()
 		}
-		backdrop?.orderOut(nil)
-		backdrop = nil
 	}
 
 	func cleanup() {
@@ -251,6 +264,7 @@ case "$1 $2" in
 	"subscribe --all")
 		# Not `tail -f`: it polls once a second, which would delay every event.
 		exec 3< "$dir/events"
+		while IFS= read -r -u 3 _; do :; done # like `tail -n 0`: only events from now on
 		while kill -0 "$PPID" 2>/dev/null; do
 			while IFS= read -r -u 3 line; do printf '%s\n' "$line"; done
 			sleep 0.01
@@ -358,6 +372,8 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, @unchecked Sen
 	}
 
 	func start() async throws { try await stream?.startCapture() }
+
+	var hasFrames: Bool { lock.withLock { !frames.isEmpty } }
 
 	/// Drops frames before `time`, keeping the last of them: it is what the screen showed at `time`.
 	func prune(before time: Double) {
@@ -583,6 +599,13 @@ func writeAnimation(_ images: [(image: CGImage, delay: Double)], to url: URL, ap
 	guard CGImageDestinationFinalize(destination) else { throw Failure("can't finish \(url.path)") }
 }
 
+func writePNG(_ image: CGImage, to url: URL) throws {
+	guard let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil)
+	else { throw Failure("can't write \(url.path)") }
+	CGImageDestinationAddImage(destination, image, nil)
+	guard CGImageDestinationFinalize(destination) else { throw Failure("can't finish \(url.path)") }
+}
+
 /// About every 10th output frame, stacked vertically at full resolution.
 func writeContactSheet(_ images: [CGImage], to url: URL) throws {
 	let picked = stride(from: 0, to: images.count, by: 10).map { images[$0] }
@@ -598,11 +621,7 @@ func writeContactSheet(_ images: [CGImage], to url: URL) throws {
 		let y = height - (index + 1) * first.height - index * gap
 		context.draw(image, in: CGRect(x: 0, y: y, width: image.width, height: image.height))
 	}
-	guard let sheet = context.makeImage(),
-		let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil)
-	else { throw Failure("can't write \(url.path)") }
-	CGImageDestinationAddImage(destination, sheet, nil)
-	guard CGImageDestinationFinalize(destination) else { throw Failure("can't finish \(url.path)") }
+	try writePNG(context.makeImage()!, to: url)
 }
 
 // MARK: Main
@@ -712,27 +731,33 @@ func run(_ session: Session) async throws {
 	environment["AERONAUT_AEROSPACE"] = fake.executable
 	environment["AERONAUT_DEMO_CALENDAR"] = calendarJSON.path
 	environment["XDG_CONFIG_HOME"] = configHome.path
-	let process = Process()
-	process.executableURL = URL(fileURLWithPath: binary)
-	process.environment = environment
 	say("Launching \(binary)...")
-	let launched = hostNow()
-	try process.run()
-	session.aeronaut = process
-
-	var filter: SCContentFilter?
-	var knownWindows: Set<CGWindowID> = []
-	for _ in 0..<60 {
-		try await Task.sleep(for: .seconds(0.25))
-		content = try await shareableContent()
-		let windows = content.windows.filter { $0.owningApplication?.processID == process.processIdentifier }
-		if windows.count >= 2 {
-			filter = displayFilter(display, content, keeping: [ownPID, process.processIdentifier], system: systemPID)
-			knownWindows = Set(content.windows.map(\.windowID))
-			break
+	/// Starts Aeronaut and waits for its two panels; returns a filter that shows only them and the backdrop.
+	func launchAeronaut() async throws -> (process: Process, launched: Double, filter: SCContentFilter, known: Set<CGWindowID>) {
+		let process = Process()
+		process.executableURL = URL(fileURLWithPath: binary)
+		process.environment = environment
+		let launched = hostNow()
+		try process.run()
+		session.aeronaut = process
+		for _ in 0..<60 {
+			try await Task.sleep(for: .seconds(0.25))
+			let content = try await shareableContent()
+			let windows = content.windows.filter { $0.owningApplication?.processID == process.processIdentifier }
+			if windows.count >= 2 {
+				let filter = displayFilter(display, content, keeping: [ownPID, process.processIdentifier], system: systemPID)
+				return (process, launched, filter, Set(content.windows.map(\.windowID)))
+			}
+		}
+		throw Failure("Aeronaut's windows never appeared")
+	}
+	func report(_ intruders: Task<[String], Never>) async {
+		intruders.cancel()
+		for name in await intruders.value {
+			fputs("readme-media: a window opened over the clips: \(name). It may show in them; run again.\n", stderr)
 		}
 	}
-	guard let filter else { throw Failure("Aeronaut's windows never appeared") }
+	let (process, launched, filter, knownWindows) = try await launchAeronaut()
 	let intruders = watchForIntruders(known: knownWindows, keeping: [ownPID, process.processIdentifier], regions: [leftRegion, rightRegion])
 
 	// 6. Workspace clip.
@@ -775,11 +800,24 @@ func run(_ session: Session) async throws {
 	await sleep(until: calendarStart + calendarDuration + 0.1)
 	let calendarFrames = try await calendarRecorder.stop()
 	say("  captured \(calendarFrames.count) frames")
+	await report(intruders)
+
+	// 7b. The still: the same bar with another config, on the start state the fake AeroSpace is back at.
+	say("Relaunching with a config for \(stillName)...")
+	session.stopAeronaut()
+	let configDirectory = configHome.appendingPathComponent("aeronaut")
+	try fm.createDirectory(at: configDirectory, withIntermediateDirectories: true)
+	try stillConfig.write(to: configDirectory.appendingPathComponent("config.toml"), atomically: true, encoding: .utf8)
+	let (stillProcess, stillLaunched, stillFilter, stillKnown) = try await launchAeronaut()
+	let stillIntruders = watchForIntruders(known: stillKnown, keeping: [ownPID, stillProcess.processIdentifier], regions: [leftRegion])
+	let stillRecorder = Recorder(filter: stillFilter, region: leftRegion, scale: scale)
+	try await stillRecorder.start()
+	await sleep(until: stillLaunched + WorkspaceClip.settle + 0.5)
+	// Nothing is sent while the screen is idle, and the first frame can come late on a static one.
+	for _ in 0..<50 where !stillRecorder.hasFrames { try await Task.sleep(for: .seconds(0.1)) }
+	let stillFrames = try await stillRecorder.stop()
+	await report(stillIntruders)
 	try? await indicator.stop()
-	intruders.cancel()
-	for name in await intruders.value {
-		fputs("readme-media: a window opened over the clips: \(name). It may show in them; run again.\n", stderr)
-	}
 
 	// Aeronaut and the backdrop have done their job.
 	session.stopCapture()
@@ -811,6 +849,21 @@ func run(_ session: Session) async throws {
 			try writeContactSheet(all, to: sheet)
 			written.append((sheet.path, "every 10th output frame (0.2 s apart), top to bottom"))
 		}
+	}
+
+	// The still goes through the workspace clip's crop and trim, as one frame.
+	if let frame = stillFrames.last {
+		say("Encoding \(stillName)...")
+		let rows = Int(barHeight * scale)
+		let (images, _) = encode(
+			Clip(sources: [0], frames: [frame], reference: leftReference, width: Int(leftRegionWidth * scale), rows: rows),
+			side: .left, scale: scale)
+		let url = out.appendingPathComponent("\(stillName).png")
+		try writePNG(images[0].image, to: url)
+		let size = (try? fm.attributesOfItem(atPath: url.path)[.size] as? Int) ?? 0
+		written.append((url.path, "\(formatBytes(size)), \(images[0].image.width)x\(images[0].image.height) px"))
+	} else {
+		throw Failure("no frame was captured for \(stillName)")
 	}
 
 	// 9. Icon.
