@@ -281,11 +281,6 @@ Upstream discussion is in nikitabobko/AeroSpace#491, with PRs #1932 (`--sort`) a
 - **Tags made by the workflow don't trigger it again.** GitHub doesn't start workflows for events caused by `GITHUB_TOKEN`, so the push and dispatch paths don't also run the tag path.
 - **Signing:** v0.1.x is ad-hoc signed. An ad-hoc signature's designated requirement is its cdhash, so macOS drops the Calendar grant on every update, and users re-grant Calendar access after upgrading. A later release should sign with a stable self-signed certificate, imported from a CI secret into a temporary keychain, so the grant survives.
 
-### 3. Packaging
-
-- **Nix:** a package that fetches the release zip, plus a nix-darwin or Home Manager module with a launchd user agent (`RunAtLoad`, `KeepAlive`, `ProcessType = Interactive`). Set `AERONAUT_AEROSPACE` to the AeroSpace binary, because a launchd agent's `PATH` is minimal.
-- **Config clash:** if a module manages `~/.config/aeronaut/config.toml`, Home Manager refuses to overwrite an existing hand-made file, so users have to remove theirs first.
-
 ## Later ideas
 
 - Per-monitor pills: today everything is drawn on the primary display.
