@@ -1,3 +1,5 @@
+<img src="docs/icon.png" align="right" width="128" height="128" alt="Aeronaut's icon, a green blimp">
+
 # Aeronaut
 
 A small SwiftUI status bar for macOS and [AeroSpace](https://github.com/nikitabobko/AeroSpace), replacing a sketchybar setup.
@@ -6,12 +8,16 @@ It draws two pills on the primary display, and both fade out while the auto-hidd
 
 The workspace pill sits top-left:
 
+<img src="docs/workspaces.gif" width="204" alt="The workspace pill. A green capsule slides from workspace 2 to 3, 1 and 4 and back, showing each workspace's app icons.">
+
 - Workspaces with windows are shown, plus the focused one even if it's empty.
 - The focused workspace has a green highlight that slides between workspaces and shows its app icons.
 - The focused window's icon is drawn at full strength, and the other icons are dimmed.
 - Clicking a number switches to that workspace. Clicking an icon focuses that window.
 
 The calendar pill sits top-right:
+
+<img src="docs/calendar.gif" width="250" alt="The calendar pill. It shows in 3h, expands to a yellow in 2m with the title Standup and a draining ring, turns red at in 1m, then goes back to in 3h.">
 
 - It shows the time until your next timed event, such as "in 7h", in a capsule that's neutral, then yellow at 5 minutes and red at 1 minute.
 - It expands to show the event's title on hover, for the last 5 minutes before the event, and briefly whenever the next event changes.
@@ -57,6 +63,8 @@ swift run Aeronaut --snapshot pill.png
 ```
 
 To build the app bundle yourself, run `scripts/bundle.sh --version 0.1.0`. It builds a release binary, then writes `dist/Aeronaut.app` (signed ad-hoc) and `dist/Aeronaut-0.1.0.zip`. `--binary PATH` uses a prebuilt executable and `--out DIR` changes the output directory.
+
+To re-record the animations in this README, run `swift scripts/readme-media.swift` with no other Aeronaut running. Your terminal needs Screen Recording permission, and AGENTS.md has the details.
 
 To pull the latest app icons, run `swift scripts/update-icons.swift`. It downloads the font and `icon_map.json` from the newest sketchybar-app-font release into `Sources/Aeronaut/Resources/`. Pass a tag such as `v3.0.12` to pin a release instead.
 

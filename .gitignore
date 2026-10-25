@@ -5,6 +5,7 @@
 .claude/
 # Snapshots can contain real calendar event titles.
 *.png
+!docs/*.png
 AppIcon.iconset/
 *.icns
 dist/

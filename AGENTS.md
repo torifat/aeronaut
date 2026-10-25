@@ -46,6 +46,17 @@ To check materials or exact geometry on screen, launch the built binary with the
 
 Point `AERONAUT_AEROSPACE` at a fake `aerospace` script. It answers `list-workspaces` and `list-windows` (with `--json`) with canned JSON, and makes `subscribe --all` print scripted events. That reproduces timing bugs, such as the focus rebound below, without touching anyone's real workspaces. To see what real AeroSpace sends, record `aerospace subscribe --all` while pressing the bindings.
 
+### README media
+
+`swift scripts/readme-media.swift [--binary PATH] [--out DIR] [--format gif|apng] [--frames DIR]` records the README's two looping animations and the icon, with nothing personal in them. It writes `workspaces.gif`, `calendar.gif` (`.png` for `--format apng`) and `icon.png` (256 px) to `docs/`, or to `--out`. Without `--binary` it runs `swift build -c release` first.
+- **Needs:** no other Aeronaut running, because the script aborts if one is. The terminal needs Screen Recording permission. Run it unsandboxed, from the repo root. It moves the cursor to mid-screen so the auto-hidden menu bar stays hidden, and takes one to two minutes, because it waits for a whole minute.
+- **What it does:** it draws a backdrop of soft colour blobs over Catppuccin base at the top of the main screen, so the frosted pills have something to blur. It then launches Aeronaut with every `AERONAUT_*` variable and `XDG_CONFIG_HOME` replaced: a fake `aerospace` (`AERONAUT_AEROSPACE`), a scripted calendar (`AERONAUT_DEMO_CALENDAR`) and an empty config home, so your own config can't leak in and the defaults apply. It always stops Aeronaut and removes its temp files, also on Ctrl-C.
+- **Capture:** ScreenCaptureKit at 60 fps, resampled by timestamp to 50 fps. The filter excludes other apps' windows, the menu bar and the system's recording indicator, but not the window server's other windows. A filter that only lists the windows to include composites each window alone, and then the frost's behind-window blur shows nothing. If a window opens over the clips, such as a notification, the script says so; run it again.
+- **Workspace clip:** a fake AeroSpace with six workspaces moves focus between them (the event times are constants at the top of the script). It starts and ends on the same state, so it loops. **Calendar clip:** the demo calendar goes from "in 3h" to a yellow "in 2m" and a red "in 1m" at a minute boundary the script picks, then back to "in 3h" with a title peek, which is why the run waits for the next whole minute. Both clips are cropped to the bar's height and trimmed to the pill's width plus 8 pt.
+- **`--frames DIR`** writes a contact sheet per clip, about every 10th frame stacked vertically at full resolution, to check the motion as stills. Check it before trusting the GIFs, and ask a human to judge the motion.
+
+`AERONAUT_DEMO_CALENDAR` is a path to a JSON file, and when it's set the calendar pill shows its events instead of EventKit's, with no permission prompt. The file is a list of `{"from": 1761450000, "start": 1761460800, "title": "Design review"}`, in unix seconds. At any time the event is the last entry, in array order, whose `from` has passed, if its `start` is still ahead, and otherwise "No events". The pill refreshes every 0.25 s instead of on the minute, so the entries can switch at any second. An unreadable or invalid file prints `aeronaut: AERONAUT_DEMO_CALENDAR: <reason>` and shows "No events".
+
 ## How it works
 
 | File | What it does |
