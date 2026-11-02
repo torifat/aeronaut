@@ -1063,6 +1063,12 @@
         ]
     },
     {
+        "iconName": ":excalidraw:",
+        "appNames": [
+            "Excalidraw"
+        ]
+    },
+    {
         "iconName": ":face_time:",
         "appNames": [
             "FaceTime",
@@ -1444,6 +1450,12 @@
         "iconName": ":helium:",
         "appNames": [
             "Helium"
+        ]
+    },
+    {
+        "iconName": ":herdr:",
+        "appNames": [
+            "Herdr"
         ]
     },
     {
@@ -1928,6 +1940,12 @@
         "iconName": ":macforge:",
         "appNames": [
             "MacForge"
+        ]
+    },
+    {
+        "iconName": ":macpacker:",
+        "appNames": [
+            "MacPacker"
         ]
     },
     {
@@ -3652,6 +3670,13 @@
         "iconName": ":tips:",
         "appNames": [
             "Tips"
+        ]
+    },
+    {
+        "iconName": ":tmog:",
+        "appNames": [
+            "Task Manager TMOG",
+            "tmog"
         ]
     },
     {
