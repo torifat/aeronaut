@@ -214,7 +214,8 @@
         "appNames": [
             "Apple Books",
             "Books",
-            "Bücher"
+            "Bücher",
+            "Книги"
         ]
     },
     {
@@ -449,13 +450,6 @@
         ]
     },
     {
-        "iconName": ":book:",
-        "appNames": [
-            "Calibre",
-            "Книги"
-        ]
-    },
-    {
         "iconName": ":bookmark:",
         "appNames": [
             "YABA",
@@ -539,7 +533,8 @@
     {
         "iconName": ":calibre:",
         "appNames": [
-            "calibre"
+            "calibre",
+            "E-book Viewer"
         ]
     },
     {
@@ -583,6 +578,12 @@
         "appNames": [
             "Chess",
             "The Enemy Within"
+        ]
+    },
+    {
+        "iconName": ":chilpa:",
+        "appNames": [
+            "Chilpa"
         ]
     },
     {
@@ -1268,6 +1269,12 @@
         "iconName": ":games:",
         "appNames": [
             "Games"
+        ]
+    },
+    {
+        "iconName": ":garageband:",
+        "appNames": [
+            "GarageBand"
         ]
     },
     {
@@ -2590,6 +2597,12 @@
         ]
     },
     {
+        "iconName": ":paper:",
+        "appNames": [
+            "Paper"
+        ]
+    },
+    {
         "iconName": ":parallels:",
         "appNames": [
             "Parallels Desktop"
@@ -2678,6 +2691,13 @@
         "iconName": ":pgadmin:",
         "appNames": [
             "pgAdmin 4"
+        ]
+    },
+    {
+        "iconName": ":phi_browser:",
+        "appNames": [
+            "Phi",
+            "Phi Canary"
         ]
     },
     {
@@ -3078,6 +3098,14 @@
         "iconName": ":resilio_sync:",
         "appNames": [
             "Resilio Sync"
+        ]
+    },
+    {
+        "iconName": ":rex:",
+        "appNames": [
+            "Rex",
+            "Rex Beta",
+            "Rex Server"
         ]
     },
     {
