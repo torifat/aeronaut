@@ -11,6 +11,8 @@ on:
         required: false
 
 permissions:
+  # actions: write lets the run dispatch release.yml after merging.
+  actions: write
   contents: write
   pull-requests: write
 
@@ -44,6 +46,7 @@ jobs:
       # One PR tracks the newest release: each run force-pushes the same
       # branch, and edits the PR if one is already open.
       - name: Open or update the pull request
+        id: pr
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -64,9 +67,12 @@ jobs:
           if git fetch -q "$remote" "$BRANCH" 2>/dev/null \
             && git diff --quiet FETCH_HEAD HEAD -- Sources/Aeronaut/Resources; then
             echo "$BRANCH already has $version."
+            head=$(git rev-parse FETCH_HEAD)
           else
             git push -q --force "$remote" "HEAD:refs/heads/$BRANCH"
+            head=$(git rev-parse HEAD)
           fi
+          echo "head=$head" >> "$GITHUB_OUTPUT"
 
           {
             echo "From the [v$version release](https://github.com/kvndrsslr/sketchybar-app-font/releases/tag/v$version), pulled by \`scripts/update-icons.swift\`."
@@ -82,3 +88,16 @@ jobs:
           else
             gh pr create --base main --head "$BRANCH" --title "$title" --body-file "$RUNNER_TEMP/body.md"
           fi
+
+      # A merge made with GITHUB_TOKEN doesn't start release.yml's push
+      # trigger, so dispatch it, which GITHUB_TOKEN can do. -R keeps gh off the
+      # local checkout, so only the remote branch is deleted. If the merge
+      # fails, the PR stays open for a manual merge.
+      - name: Merge and release
+        if: steps.pr.outputs.head != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ steps.pr.outputs.head }}
+        run: |
+          gh pr merge "$BRANCH" -R "$GITHUB_REPOSITORY" --squash --delete-branch --match-head-commit "$HEAD_SHA"
+          gh workflow run release.yml -R "$GITHUB_REPOSITORY" --ref main

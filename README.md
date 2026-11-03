@@ -66,7 +66,7 @@ To build the app bundle yourself, run `scripts/bundle.sh --version 0.1.0`. It bu
 
 To re-record the animations in this README, run `swift scripts/readme-media.swift` with no other Aeronaut running. Your terminal needs Screen Recording permission, and AGENTS.md has the details.
 
-To pull the latest app icons, run `swift scripts/update-icons.swift`. It downloads the font and `icon_map.json` from the newest sketchybar-app-font release into `Sources/Aeronaut/Resources/`. Pass a tag such as `v3.0.12` to pin a release instead.
+To pull the latest app icons, run `swift scripts/update-icons.swift`. It downloads the font and `icon_map.json` from the newest sketchybar-app-font release into `Sources/Aeronaut/Resources/`. Pass a tag such as `v3.0.12` to pin a release instead. A weekly workflow does the same, merges the result and cuts a release, so you rarely need to.
 
 ## Configuration
 
