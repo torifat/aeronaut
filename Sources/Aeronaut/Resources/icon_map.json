@@ -250,6 +250,12 @@
         ]
     },
     {
+        "iconName": ":asana:",
+        "appNames": [
+            "Asana"
+        ]
+    },
+    {
         "iconName": ":aseprite:",
         "appNames": [
             "Aseprite"
@@ -265,6 +271,12 @@
         "iconName": ":atom:",
         "appNames": [
             "Atom"
+        ]
+    },
+    {
+        "iconName": ":atuin:",
+        "appNames": [
+            "Atuin"
         ]
     },
     {
@@ -828,7 +840,8 @@
     {
         "iconName": ":deepseek:",
         "appNames": [
-            "DeepSeek"
+            "DeepSeek",
+            "DeepSeek Harness"
         ]
     },
     {
@@ -1060,6 +1073,12 @@
         "appNames": [
             "Evernote Legacy",
             "Evernote"
+        ]
+    },
+    {
+        "iconName": ":excalidraw:",
+        "appNames": [
+            "Excalidraw"
         ]
     },
     {
@@ -1447,6 +1466,12 @@
         ]
     },
     {
+        "iconName": ":herdr:",
+        "appNames": [
+            "Herdr"
+        ]
+    },
+    {
         "iconName": ":hermes_agent:",
         "appNames": [
             "Hermes",
@@ -1485,6 +1510,12 @@
             "Applite",
             "BrewMate",
             "Brewlet"
+        ]
+    },
+    {
+        "iconName": ":httpie:",
+        "appNames": [
+            "HTTPie"
         ]
     },
     {
@@ -1754,6 +1785,12 @@
         ]
     },
     {
+        "iconName": ":keymapp:",
+        "appNames": [
+            "Keymapp"
+        ]
+    },
+    {
         "iconName": ":keynote:",
         "appNames": [
             "Keynote",
@@ -1931,6 +1968,12 @@
         ]
     },
     {
+        "iconName": ":macpacker:",
+        "appNames": [
+            "MacPacker"
+        ]
+    },
+    {
         "iconName": ":macpass:",
         "appNames": [
             "MacPass"
@@ -2036,6 +2079,12 @@
         "iconName": ":mattermost:",
         "appNames": [
             "Mattermost"
+        ]
+    },
+    {
+        "iconName": ":max:",
+        "appNames": [
+            "Max"
         ]
     },
     {
@@ -2570,6 +2619,12 @@
         ]
     },
     {
+        "iconName": ":output_hub:",
+        "appNames": [
+            "Output Hub"
+        ]
+    },
+    {
         "iconName": ":overcast:",
         "appNames": [
             "Overcast"
@@ -3046,6 +3101,12 @@
         ]
     },
     {
+        "iconName": ":recordly:",
+        "appNames": [
+            "Recordly"
+        ]
+    },
+    {
         "iconName": ":reeder5:",
         "appNames": [
             "Reeder"
@@ -3371,6 +3432,18 @@
         ]
     },
     {
+        "iconName": ":speediness:",
+        "appNames": [
+            "Speediness"
+        ]
+    },
+    {
+        "iconName": ":splice:",
+        "appNames": [
+            "Splice"
+        ]
+    },
+    {
         "iconName": ":spotify:",
         "appNames": [
             "Spotify"
@@ -3643,6 +3716,12 @@
         ]
     },
     {
+        "iconName": ":tinyhand:",
+        "appNames": [
+            "TinyHand"
+        ]
+    },
+    {
         "iconName": ":tinyrdm:",
         "appNames": [
             "Tiny RDM"
@@ -3652,6 +3731,19 @@
         "iconName": ":tips:",
         "appNames": [
             "Tips"
+        ]
+    },
+    {
+        "iconName": ":tldraw:",
+        "appNames": [
+            "tldraw"
+        ]
+    },
+    {
+        "iconName": ":tmog:",
+        "appNames": [
+            "Task Manager TMOG",
+            "tmog"
         ]
     },
     {
@@ -3722,6 +3814,14 @@
         ]
     },
     {
+        "iconName": ":tuta_mail:",
+        "appNames": [
+            "Tuta",
+            "Tuta Mail",
+            "Tutanota Desktop"
+        ]
+    },
+    {
         "iconName": ":twingate:",
         "appNames": [
             "Twingate"
@@ -3735,9 +3835,21 @@
         ]
     },
     {
+        "iconName": ":ua_connect:",
+        "appNames": [
+            "UA Connect"
+        ]
+    },
+    {
         "iconName": ":ugreen-nas:",
         "appNames": [
             "UGREEN NAS"
+        ]
+    },
+    {
+        "iconName": ":ujam:",
+        "appNames": [
+            "UJAM"
         ]
     },
     {
@@ -3745,6 +3857,13 @@
         "appNames": [
             "Unity",
             "Unity Hub"
+        ]
+    },
+    {
+        "iconName": ":universal_audio:",
+        "appNames": [
+            "UAD Console",
+            "UAD Meter & Control Panel"
         ]
     },
     {
@@ -3828,6 +3947,12 @@
         ]
     },
     {
+        "iconName": ":vowen:",
+        "appNames": [
+            "Vowen"
+        ]
+    },
+    {
         "iconName": ":vscodium:",
         "appNames": [
             "VSCodium"
@@ -3837,6 +3962,12 @@
         "iconName": ":warp:",
         "appNames": [
             "Warp"
+        ]
+    },
+    {
+        "iconName": ":waves_central:",
+        "appNames": [
+            "Waves Central"
         ]
     },
     {
@@ -3949,6 +4080,12 @@
         ]
     },
     {
+        "iconName": ":x:",
+        "appNames": [
+            "X"
+        ]
+    },
+    {
         "iconName": ":xbox:",
         "appNames": [
             "xemu"
@@ -3991,6 +4128,12 @@
         "appNames": [
             "Yazi",
             "yazi"
+        ]
+    },
+    {
+        "iconName": ":youlean_loudness_meter:",
+        "appNames": [
+            "Youlean Loudness Meter*"
         ]
     },
     {
