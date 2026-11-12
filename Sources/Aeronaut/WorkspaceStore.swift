@@ -12,6 +12,7 @@ final class WorkspaceStore {
 	/// Focus changes that arrived during the hold window, newest last.
 	@ObservationIgnored private var pendingWorkspace: String?
 	@ObservationIgnored private var pendingWindowID: Int?
+	@ObservationIgnored private var pendingMonitorID: Int?
 	/// Whether a `focus-changed` has set `pendingWindowID` since the last show,
 	/// so a lone `focused-workspace-changed` leaves the shown window alone.
 	@ObservationIgnored private var hasPendingWindow = false
@@ -47,6 +48,12 @@ final class WorkspaceStore {
 		}
 	}
 
+	/// Reads AeroSpace again, for changes it sends no event for, such as a
+	/// display coming or going.
+	func refresh() {
+		requestRefresh()
+	}
+
 	func focus(workspace: String) {
 		Task { try? await client.focus(workspace: workspace) }
 	}
@@ -58,7 +65,7 @@ final class WorkspaceStore {
 	private func apply(_ event: AeroSpaceEvent) {
 		// Move the highlight straight away; the refresh then fills in any
 		// window changes.
-		if event.name == "focused-workspace-changed" || event.name == "focus-changed" {
+		if ["focused-workspace-changed", "focus-changed", "focused-monitor-changed"].contains(event.name) {
 			focusGeneration += 1
 		}
 		switch event.name {
@@ -73,6 +80,10 @@ final class WorkspaceStore {
 			if let workspace = event.workspace { pendingWorkspace = workspace }
 			pendingWindowID = event.windowID
 			hasPendingWindow = true
+			applyFocus()
+		case "focused-monitor-changed":
+			if let monitor = event.monitorID { pendingMonitorID = monitor }
+			if let workspace = event.workspace { pendingWorkspace = workspace }
 			applyFocus()
 		default:
 			break
@@ -97,7 +108,13 @@ final class WorkspaceStore {
 
 	private func showPendingFocus() {
 		if let workspace = pendingWorkspace, workspace != snapshot.focusedWorkspace {
-			snapshot.focusedWorkspace = workspace
+			var next = snapshot
+			next.focusedWorkspace = workspace
+			next.markFocusedVisible()
+			snapshot = next
+		}
+		if let monitor = pendingMonitorID, monitor != snapshot.focusedMonitorID {
+			snapshot.focusedMonitorID = monitor
 		}
 		if hasPendingWindow {
 			hasPendingWindow = false
@@ -134,12 +151,15 @@ final class WorkspaceStore {
 						var merged = next
 						merged.focusedWorkspace = snapshot.focusedWorkspace
 						merged.focusedWindowID = snapshot.focusedWindowID
+						merged.focusedMonitorID = snapshot.focusedMonitorID
+						merged.markFocusedVisible()
 						if merged != snapshot { snapshot = merged }
 						needsRefresh = true
 					} else {
 						if next != snapshot { snapshot = next }
 						pendingWorkspace = next.focusedWorkspace
 						pendingWindowID = next.focusedWindowID
+						pendingMonitorID = next.focusedMonitorID
 						hasPendingWindow = false
 					}
 				}

@@ -117,6 +117,7 @@ struct SlidingHighlight: View {
 	let bounds: [String: Anchor<CGRect>]
 	let focused: String?
 	let style: FocusStyle
+	var hasFocus = true
 	var freeze: SlideFreeze?
 
 	@StateObject private var state = SlideState()
@@ -127,7 +128,7 @@ struct SlidingHighlight: View {
 				let target = proxy[anchor]
 				if let freeze, let from = bounds[freeze.from] {
 					let progress = SlideMotion.slide.progress(at: freeze.time)
-					frame(style: style, rect: SlideMotion.rect(start: proxy[from], target: target, progress: progress))
+					frame(style: style, hasFocus: hasFocus, rect: SlideMotion.rect(start: proxy[from], target: target, progress: progress))
 				} else {
 					animated(focused: focused, target: target)
 				}
@@ -137,18 +138,21 @@ struct SlidingHighlight: View {
 	}
 
 	private func animated(focused: String, target: CGRect) -> some View {
-		let state = state, style = style, motion = SlideMotion.current
+		let state = state, style = style, hasFocus = hasFocus, motion = SlideMotion.current
 		let now = Date()
 		state.note(focus: focused, now: now)
 		let schedule = SlideSchedule(begin: state.began, end: state.began.addingTimeInterval(motion.duration + 0.05))
 		return TimelineView(schedule) { context in
-			frame(style: style, rect: state.rect(target: target, motion: motion, now: context.date))
+			frame(style: style, hasFocus: hasFocus, rect: state.rect(target: target, motion: motion, now: context.date))
 		}
 	}
 
-	private func frame(style: FocusStyle, rect: CGRect) -> some View {
+	private func frame(style: FocusStyle, hasFocus: Bool, rect: CGRect) -> some View {
 		// Positioned by offset so the frame can be any size.
-		FocusHighlight(style: style)
+		FocusHighlight(style: style, hasFocus: hasFocus)
+			// The colour change gets its own animation, because the timeline's redraws
+			// may not carry the pill's. The slide is untouched.
+			.animation(Theme.animation, value: hasFocus)
 			.frame(width: rect.width, height: rect.height)
 			.offset(x: rect.minX, y: rect.minY)
 			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

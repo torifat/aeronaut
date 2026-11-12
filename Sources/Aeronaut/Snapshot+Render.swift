@@ -27,6 +27,35 @@ extension Snapshot {
 		focusedWorkspace: "6",
 		focusedWindowID: nil
 	)
+
+	/// Two monitors. Monitor 1 shows workspace 2 and holds focus there. Monitor 2
+	/// shows workspace 6, so its pill is the unfocused one.
+	static let sampleMonitors = Snapshot(
+		workspaces: sample.workspaces.map { workspace in
+			var workspace = workspace
+			workspace.isVisible = workspace.id == "2"
+			return workspace
+		} + [
+			Workspace(id: "5", monitorID: 2, windows: [Window(id: 10, appName: "Finder")]),
+			Workspace(id: "6", monitorID: 2, windows: [
+				Window(id: 11, appName: "Google Chrome"),
+				Window(id: 12, appName: "Ghostty"),
+			], isVisible: true),
+		],
+		focusedWorkspace: "2",
+		focusedWindowID: 3,
+		monitors: [Monitor(id: 1, screenIndex: 1), Monitor(id: 2, screenIndex: 2)],
+		focusedMonitorID: 1
+	)
+
+	/// `sampleMonitors` with focus on monitor 2's Ghostty window.
+	static let sampleMonitors2Focus = Snapshot(
+		workspaces: sampleMonitors.workspaces,
+		focusedWorkspace: "6",
+		focusedWindowID: 12,
+		monitors: sampleMonitors.monitors,
+		focusedMonitorID: 2
+	)
 }
 
 enum SnapshotError: Error {
@@ -69,8 +98,19 @@ func renderSnapshot(to path: String, client: AeroSpaceClient) async throws {
 		(NextEvent(start: now.addingTimeInterval(45), title: "1:1 Sam"), 45.0 / 300),
 		(nil, nil),
 	]
+	/// One pill per screen that has a monitor, as the bars show them.
+	func screenRow(_ snapshot: Snapshot, style: WorkspacesStyle) -> some View {
+		HStack(spacing: 8) {
+			ForEach(snapshot.monitors.isEmpty ? [1] : snapshot.monitors.map(\.screenIndex), id: \.self) { index in
+				if let scoped = snapshot.scoped(toScreen: index) {
+					WorkspacesPill(snapshot: scoped, style: style, focus: settings.values.focus, border: settings.border)
+				}
+			}
+		}
+	}
+	let unfocusedSample = Snapshot.sampleMonitors.scoped(toScreen: 2)
 	let view = VStack(alignment: .leading, spacing: 8) {
-		WorkspacesPill(snapshot: snapshot, style: settings.values.workspaces, focus: settings.values.focus, border: settings.border)
+		screenRow(snapshot, style: settings.values.workspaces)
 		WorkspacesPill(snapshot: .sampleEmptyFocus, style: settings.values.workspaces, focus: settings.values.focus, border: settings.border)
 		// Workspace 3 hovered: the preview capsule and the brighter number.
 		WorkspacesPill(snapshot: .sample, focus: settings.values.focus, border: settings.border, hovered: "3")
@@ -78,6 +118,11 @@ func renderSnapshot(to path: String, client: AeroSpaceClient) async throws {
 		WorkspacesPill(snapshot: .sampleEmptyFocus, style: .all)
 		// Capsule halfway between workspaces 2 and 3, to check the split colours.
 		WorkspacesPill(snapshot: .sample, style: .all, slide: HighlightSlide(from: "2", to: "3", progress: 0.5))
+		// Two monitors, once with focus on each: the green capsule on one pill, the faint white one on the other.
+		screenRow(.sampleMonitors, style: .compact)
+		screenRow(.sampleMonitors2Focus, style: .compact)
+		screenRow(.sampleMonitors, style: .all)
+		screenRow(.sampleMonitors2Focus, style: .all)
 		calendarRow(CalendarState(event: live, now: now))
 		ForEach(samples.indices, id: \.self) { index in
 			calendarRow(CalendarState(event: samples[index].1, now: now))
@@ -115,6 +160,10 @@ func renderSnapshot(to path: String, client: AeroSpaceClient) async throws {
 			HStack(spacing: 8) {
 				WorkspacesPill(snapshot: snapshot, focus: focus)
 				WorkspacesPill(snapshot: .sampleEmptyFocus, focus: focus)
+				// The same style on a monitor without focus.
+				if let unfocusedSample {
+					WorkspacesPill(snapshot: unfocusedSample, focus: focus)
+				}
 			}
 		}
 		// The slide from 1 to 3, frozen at fixed times, the last one after the overshoot.

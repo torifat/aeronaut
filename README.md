@@ -4,13 +4,13 @@
 
 A small SwiftUI status bar for macOS and [AeroSpace](https://github.com/nikitabobko/AeroSpace), replacing a sketchybar setup.
 
-It draws two pills on the primary display, and both fade out while the auto-hidden menu bar is showing.
+It draws a workspace pill on every display and a calendar pill on the built-in one, and they fade out while the auto-hidden menu bar is showing.
 
 The workspace pill sits top-left:
 
 <img src="docs/workspaces.gif" width="204" alt="The workspace pill. A green capsule slides from workspace 2 to 3, 1 and 4 and back, showing each workspace's app icons.">
 
-- Workspaces with windows are shown, plus the focused one even if it's empty.
+- Workspaces with windows are shown, plus the focused one even if it's empty. Each display shows its own monitor's workspaces, and only the monitor with focus is green.
 - The focused workspace has a green highlight that slides between workspaces and shows its app icons.
 - The focused window's icon is drawn at full strength, and the other icons are dimmed.
 - Clicking a number switches to that workspace. Clicking an icon focuses that window.
@@ -94,6 +94,7 @@ font = "pixel"            # pixel | rounded | mono | sf
 [calendar]
 style = "capsule"         # capsule | plain
 icon-size = 17            # 12 to 22
+monitor = "built-in"      # built-in | main | all: which displays show the calendar pill
 ```
 
 For example, `focus-margin = 0` under `[pill]` makes the focus capsule fill the pill's height:
@@ -116,7 +117,3 @@ If a line is invalid, Aeronaut prints a warning naming the line and uses that op
 | `MenuBarWatcher.swift` | Fades the panels out while the menu bar is showing |
 | `Config.swift`, `Settings.swift`, `ConfigWatcher.swift` | The config file: parsing, the live settings, and reload on save |
 | `Theme.swift` | Colours, fonts and the animation curve |
-
-## Roadmap
-
-- Per-monitor pills

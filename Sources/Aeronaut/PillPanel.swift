@@ -19,6 +19,8 @@ final class PillPanel: NSPanel {
 		hasShadow = false
 		hidesOnDeactivate = false
 		isMovable = false
+		// The delegate owns the panel and closes it when its display goes away.
+		isReleasedWhenClosed = false
 
 		let host = FirstMouseHostingView(rootView: rootView)
 		host.sizingOptions = []

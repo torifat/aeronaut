@@ -134,6 +134,15 @@ enum Theme {
 	/// ghost, so it doesn't read as hovered.
 	static let restCapsuleOpacity = 0.16
 
+	/// The white capsule on a monitor that doesn't hold focus. Much dimmer than
+	/// the calendar's rest capsule, so a parked workspace recedes. That makes it
+	/// about as light as the surface0 hover ghost.
+	static let inactiveCapsuleOpacity = 0.06
+
+	/// The opacity of an icon on the capsule of a monitor that doesn't hold
+	/// focus. No icon there is the focused one, so they all use this.
+	static let inactiveIconOpacity = 0.32
+
 	/// The focus capsule's slide: a little bounce, so it overshoots and settles.
 	static let focusSpring = Spring(duration: 0.38, bounce: 0.2)
 	static let animation = Animation.smooth(duration: 0.35)

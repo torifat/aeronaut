@@ -13,6 +13,16 @@ enum FontChoice: String, CaseIterable, Sendable {
 	case pixel, rounded, mono, sf
 }
 
+/// Which displays show the calendar pill.
+enum CalendarMonitor: String, CaseIterable, Sendable {
+	/// The built-in display, or the main one when there's no built-in display (clamshell).
+	case builtIn = "built-in"
+	/// `NSScreen.screens.first`.
+	case main
+	/// Every display.
+	case all
+}
+
 /// Every option, as typed values. The defaults are the shipped look.
 struct SettingsValues: Equatable, Sendable {
 	var material = MaterialChoice.frost
@@ -29,6 +39,7 @@ struct SettingsValues: Equatable, Sendable {
 	var font = FontChoice.pixel
 	var calendarIconSize = 17.0
 	var calendarStyle = CalendarStyle.capsule
+	var calendarMonitor = CalendarMonitor.builtIn
 	/// The workspace pill's accent, as 0xAARRGGBB.
 	var accent: UInt32 = 0xffa6_e3a1
 	/// `nil` is "auto": the capsule's horizontal padding matches its vertical inset.
@@ -268,6 +279,7 @@ enum ConfigParser {
 		},
 		number("calendar", "icon-size", SettingsValues.calendarIconSizeRange, env: "AERONAUT_CALENDAR_ICON_SIZE") { $0.calendarIconSize = $1 },
 		choice("calendar", "style", env: "AERONAUT_CALENDAR_STYLE") { $0.calendarStyle = $1 },
+		choice("calendar", "monitor", env: "AERONAUT_CALENDAR_MONITOR") { $0.calendarMonitor = $1 },
 		choice("text", "font", env: "AERONAUT_FONT") { $0.font = $1 },
 		// `focus-opacity` and `focus-margin` started in [workspaces]. Old configs
 		// keep working, with a warning; they have no env var, so the variables

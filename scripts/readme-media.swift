@@ -259,6 +259,7 @@ read -r ws win < "$dir/state"
 case "$1 $2" in
 	"list-workspaces --all") cat "$dir/workspaces.json" ;;
 	"list-workspaces --focused") printf '[{"workspace":"%s","monitor-id":1}]\\n' "$ws" ;;
+	"list-monitors --format") printf '[{"monitor-id":1,"monitor-appkit-nsscreen-screens-id":1}]\\n' ;;
 	"list-windows --all") cat "$dir/windows.json" ;;
 	"list-windows --focused") cat "$dir/window-$win.json" ;;
 	"subscribe --all")

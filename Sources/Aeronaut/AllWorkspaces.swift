@@ -34,7 +34,7 @@ struct AllWorkspaces: View {
 			.overlayPreferenceValue(ItemBounds.self) { bounds in
 				let capsule = HighlightCapsule(bounds: bounds, focused: snapshot.focusedWorkspace, slide: slide)
 				ZStack(alignment: .topLeading) {
-					capsule.foregroundStyle(Theme.accent)
+					capsule.foregroundStyle(snapshot.hasFocus ? Theme.accent : Color.white.opacity(Theme.inactiveCapsuleOpacity))
 					groups(.grey)
 						.mask {
 							Rectangle()
@@ -55,6 +55,7 @@ struct AllWorkspaces: View {
 					workspace: workspace,
 					isFocused: workspace.id == snapshot.focusedWorkspace,
 					focusedWindowID: snapshot.focusedWindowID,
+					hasFocus: snapshot.hasFocus,
 					layer: layer,
 					onSelectWindow: onSelectWindow
 				)
@@ -73,10 +74,12 @@ struct AllWorkspaces: View {
 		let workspace: Workspace
 		let isFocused: Bool
 		let focusedWindowID: Int?
+		/// False on a monitor that doesn't hold focus: the capsule is white, so the dark copy is light text and no icon is dimmed.
+		let hasFocus: Bool
 		let layer: Layer
 		let onSelectWindow: @MainActor (Int) -> Void
 
-		private var color: Color { layer == .dark ? Theme.onAccent : Theme.grey }
+		private var color: Color { layer == .dark ? (hasFocus ? Theme.onAccent : Theme.text) : Theme.grey }
 
 
 		var body: some View {
@@ -90,7 +93,7 @@ struct AllWorkspaces: View {
 							AppIcon(
 								appName: window.appName,
 								// Only the focused workspace's other windows are dimmed.
-								isFocused: !(layer == .dark && isFocused) || window.id == focusedWindowID,
+								isFocused: !(layer == .dark && isFocused && hasFocus) || window.id == focusedWindowID,
 								color: color
 							)
 							.onTapGesture { onSelectWindow(window.id) }

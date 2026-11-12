@@ -45,16 +45,33 @@ enum FocusStyle: String, CaseIterable, Sendable {
 	@MainActor static var translucentOpacity: Double { Settings.shared.values.focusOpacity }
 }
 
-/// The focus marker's shape, filling the rect `SlidingHighlight` gives it.
+/// The focus marker's shape, filling the rect `SlidingHighlight` gives it. On a
+/// monitor without focus (`hasFocus` false) it's a faint white capsule
+/// (`Theme.inactiveCapsuleOpacity`) instead, since green means focus.
+/// `.underline` keeps its bar, in grey.
 struct FocusHighlight: View {
 	let style: FocusStyle
+	var hasFocus = true
 
+	/// `.translucent` and `.underline` change colour in place, so they fade between
+	/// the two looks. The other styles swap for the white capsule.
 	var body: some View {
+		if !hasFocus && style != .translucent && style != .underline {
+			Capsule().fill(Color.white.opacity(Theme.inactiveCapsuleOpacity))
+		} else {
+			focused
+		}
+	}
+
+	@ViewBuilder
+	private var focused: some View {
 		switch style {
 		case .solid:
 			Capsule().fill(Theme.accent)
 		case .translucent:
-			Capsule().fill(Theme.accent.opacity(FocusStyle.translucentOpacity))
+			Capsule().fill(
+				hasFocus ? Theme.accent.opacity(FocusStyle.translucentOpacity) : Color.white.opacity(Theme.inactiveCapsuleOpacity)
+			)
 		case .glossy:
 			Capsule()
 				.fill(Theme.accent)
@@ -87,7 +104,7 @@ struct FocusHighlight: View {
 		case .underline:
 			Color.clear.overlay(alignment: .bottom) {
 				Capsule()
-					.fill(Theme.accent)
+					.fill(hasFocus ? Theme.accent : Theme.grey)
 					.frame(height: 3)
 					.padding(.horizontal, 6)
 					.padding(.bottom, 1)
@@ -139,7 +156,7 @@ struct WorkspacesPill: View {
 			}
 		}
 		.frame(height: Theme.pillHeight)
-		.pillBackground(Capsule(), material: material, border: border, accent: Theme.accent)
+		.pillBackground(Capsule(), material: material, border: border, accent: snapshot.hasFocus ? Theme.accent : Theme.border)
 		.animation(Theme.animation, value: snapshot)
 	}
 
@@ -150,6 +167,7 @@ struct WorkspacesPill: View {
 					workspace: workspace,
 					isFocused: workspace.id == snapshot.focusedWorkspace,
 					focusedWindowID: snapshot.focusedWindowID,
+					hasFocus: snapshot.hasFocus,
 					focus: focus,
 					forceHover: workspace.id == hovered,
 					onSelectWorkspace: onSelectWorkspace,
@@ -159,7 +177,7 @@ struct WorkspacesPill: View {
 			}
 		}
 		.backgroundPreferenceValue(ItemBounds.self) { bounds in
-			SlidingHighlight(bounds: bounds, focused: snapshot.focusedWorkspace, style: focus, freeze: slideFreeze)
+			SlidingHighlight(bounds: bounds, focused: snapshot.focusedWorkspace, style: focus, hasFocus: snapshot.hasFocus, freeze: slideFreeze)
 		}
 	}
 }
@@ -168,6 +186,8 @@ private struct WorkspaceItem: View {
 	let workspace: Workspace
 	let isFocused: Bool
 	let focusedWindowID: Int?
+	/// False on a monitor that doesn't hold focus: its capsule is white, so its content is light.
+	let hasFocus: Bool
 	let focus: FocusStyle
 	let forceHover: Bool
 	let onSelectWorkspace: @MainActor (String) -> Void
@@ -176,6 +196,9 @@ private struct WorkspaceItem: View {
 	/// The focused workspace's capsule shows its icons instead of its number,
 	/// unless it has no windows.
 	private var showsWindows: Bool { isFocused && !workspace.windows.isEmpty }
+
+	/// The colour on the capsule: the focus style's, or plain text when the capsule is white.
+	private var capsuleContent: Color { hasFocus ? focus.content : Theme.text }
 
 
 	/// Each item owns its 4 pt of margin on both sides, so the hit area has no
@@ -213,7 +236,7 @@ private struct WorkspaceItem: View {
 					.font(Theme.label)
 					// Grey until it's the highlighted number, so it doesn't turn dark
 					// while it fades out ahead of the sliding capsule.
-					.foregroundStyle(isFocused ? focus.content : hovering ? Theme.text : Theme.grey)
+					.foregroundStyle(isFocused ? capsuleContent : hovering ? Theme.text : Theme.grey)
 					.padding(.leading, 8 + Self.margin)
 					.padding(.trailing, isFocused ? 8 - Theme.digitBearing + Self.margin : 8)
 					.frame(height: Theme.pillHeight)
@@ -241,9 +264,9 @@ private struct WorkspaceItem: View {
 						AppIcon(
 							appName: window.appName,
 							isFocused: window.id == focusedWindowID,
-							color: focus.content,
+							color: capsuleContent,
 							isHovering: hovering,
-							dimmedOpacity: focus.dimmedOpacity
+							dimmedOpacity: hasFocus ? focus.dimmedOpacity : Theme.inactiveIconOpacity
 						)
 						.padding(.vertical, 7)
 						.contentShape(Rectangle())

@@ -9,23 +9,87 @@ struct Workspace: Identifiable, Equatable, Sendable {
 	let id: String
 	let monitorID: Int
 	var windows: [Window]
+	/// Whether this workspace is the one its monitor currently shows. Every
+	/// monitor has exactly one.
+	var isVisible = false
+}
+
+/// One AeroSpace monitor and the screen it sits on.
+struct Monitor: Equatable, Sendable {
+	let id: Int
+	/// The monitor's 1-based position in `NSScreen.screens`.
+	let screenIndex: Int
 }
 
 struct Snapshot: Equatable, Sendable {
 	var workspaces: [Workspace] = []
+	/// AeroSpace's one focused workspace. On a snapshot scoped to an unfocused
+	/// monitor, that monitor's visible workspace instead.
 	var focusedWorkspace: String?
 	var focusedWindowID: Int?
+	/// Every monitor AeroSpace reports. Empty when it can't say, which keeps
+	/// everything on the first screen.
+	var monitors: [Monitor] = []
+	/// The monitor that holds focus. Only a fallback for `scoped(toScreen:)`,
+	/// which looks at `focusedWorkspace` first.
+	var focusedMonitorID: Int?
+	/// False only on a snapshot scoped to a monitor that doesn't hold focus. That
+	/// pill drops its green, because green means focus.
+	var hasFocus = true
+}
+
+extension Snapshot {
+	/// What the pill on one screen shows. `index` is 1-based, like `NSScreen.screens`.
+	///
+	/// With no monitors to go by, screen 1 gets the snapshot as it is and the
+	/// others get nothing. Otherwise the result keeps only that monitor's
+	/// workspaces. The monitor that holds focus keeps the focus. Any other one
+	/// shows its visible workspace with no focused window and `hasFocus` false.
+	/// `monitors` and `focusedMonitorID` are cleared, so a change on another
+	/// monitor leaves this snapshot equal.
+	func scoped(toScreen index: Int) -> Snapshot? {
+		if monitors.isEmpty { return index == 1 ? self : nil }
+		guard let monitor = monitors.first(where: { $0.screenIndex == index }) else { return nil }
+		// The workspace is right as soon as `focused-workspace-changed` lands, and
+		// events can arrive in any order, so it comes before the monitor id.
+		let focusedMonitor = workspaces.first { $0.id == focusedWorkspace }?.monitorID ?? focusedMonitorID
+		var scoped = self
+		scoped.workspaces = workspaces.filter { $0.monitorID == monitor.id }
+		scoped.monitors = [monitor]
+		scoped.focusedMonitorID = nil
+		if monitor.id == focusedMonitor {
+			scoped.hasFocus = true
+		} else {
+			scoped.focusedWorkspace = scoped.workspaces.first(where: \.isVisible)?.id
+			scoped.focusedWindowID = nil
+			scoped.hasFocus = false
+		}
+		return scoped
+	}
+
+	/// Marks `focusedWorkspace` as the visible workspace on its monitor. A focus
+	/// event lands before the refresh that reports visibility. Without this, a
+	/// monitor that lost focus right after would show its previous workspace
+	/// until that refresh.
+	mutating func markFocusedVisible() {
+		guard let focused = workspaces.first(where: { $0.id == focusedWorkspace }) else { return }
+		for index in workspaces.indices where workspaces[index].monitorID == focused.monitorID {
+			workspaces[index].isVisible = workspaces[index].id == focused.id
+		}
+	}
 }
 
 struct AeroSpaceEvent: Decodable, Sendable {
 	let name: String
 	let workspace: String?
 	let windowID: Int?
+	let monitorID: Int?
 
 	enum CodingKeys: String, CodingKey {
 		case name = "_event"
 		case workspace
 		case windowID = "windowId"
+		case monitorID = "monitorId"
 	}
 }
 
@@ -93,7 +157,7 @@ struct AeroSpaceClient: Sendable {
 	func snapshot() async throws -> Snapshot {
 		async let workspaces = decode(
 			[WorkspaceRow].self,
-			["list-workspaces", "--all", "--format", "%{workspace}%{monitor-id}", "--json"]
+			["list-workspaces", "--all", "--format", "%{workspace}%{monitor-id}%{workspace-is-visible}", "--json"]
 		)
 		async let windows = decode(
 			[WindowRow].self,
@@ -108,6 +172,11 @@ struct AeroSpaceClient: Sendable {
 			[WindowRow].self,
 			["list-windows", "--focused", "--format", "%{window-id}%{app-name}%{workspace}", "--json"]
 		)
+		// An AeroSpace without monitor formats leaves the pills on the first screen.
+		async let monitors = try? decode(
+			[MonitorRow].self,
+			["list-monitors", "--format", "%{monitor-id}%{monitor-appkit-nsscreen-screens-id}", "--json"]
+		)
 
 		let windowsByWorkspace = Dictionary(grouping: try await windows, by: \.workspace)
 		return Snapshot(
@@ -117,11 +186,14 @@ struct AeroSpaceClient: Sendable {
 					monitorID: row.monitorID,
 					windows: (windowsByWorkspace[row.workspace] ?? []).map {
 						Window(id: $0.windowID, appName: $0.appName)
-					}
+					},
+					isVisible: row.isVisible ?? false
 				)
 			},
 			focusedWorkspace: try await focusedWorkspace.first?.workspace,
-			focusedWindowID: await focusedWindow?.first?.windowID
+			focusedWindowID: await focusedWindow?.first?.windowID,
+			monitors: (await monitors ?? []).map { Monitor(id: $0.monitorID, screenIndex: $0.screenIndex) },
+			focusedMonitorID: try await focusedWorkspace.first?.monitorID
 		)
 	}
 
@@ -172,10 +244,23 @@ struct AeroSpaceClient: Sendable {
 private struct WorkspaceRow: Decodable {
 	let workspace: String
 	let monitorID: Int
+	/// Absent from a fake or older `aerospace`, and from `--focused` rows.
+	let isVisible: Bool?
 
 	enum CodingKeys: String, CodingKey {
 		case workspace
 		case monitorID = "monitor-id"
+		case isVisible = "workspace-is-visible"
+	}
+}
+
+private struct MonitorRow: Decodable {
+	let monitorID: Int
+	let screenIndex: Int
+
+	enum CodingKeys: String, CodingKey {
+		case monitorID = "monitor-id"
+		case screenIndex = "monitor-appkit-nsscreen-screens-id"
 	}
 }
 

@@ -62,7 +62,7 @@ Point `AERONAUT_AEROSPACE` at a fake `aerospace` script. It answers `list-worksp
 | File | What it does |
 | --- | --- |
 | `main.swift` | Entry point. Handles `--snapshot`, otherwise sets the accessory activation policy and runs the app |
-| `AppDelegate.swift` | Creates and places the left and right panels and re-places them when screens change |
+| `AppDelegate.swift` | Keeps a left and a right panel on every screen: creates them, re-places them and closes them as screens change. Also `BarScreen`, the per-screen facts the bars read |
 | `PillPanel.swift` | Borderless, non-activating `NSPanel` hosting SwiftUI. Registers itself with `MenuBarWatcher` |
 | `MenuBarWatcher.swift` | Fades every `PillPanel` out while the auto-hidden menu bar is showing |
 | `AeroSpace.swift` | Models, the CLI client, and the event stream |
@@ -88,11 +88,12 @@ Point `AERONAUT_AEROSPACE` at a fake `aerospace` script. It answers `list-worksp
 - `aerospace subscribe --all` prints one JSON object per line. The events used are:
   - `focused-workspace-changed`, with `workspace` and `prevWorkspace`
   - `focus-changed`, with `windowId` and `workspace`
-  - `focused-monitor-changed`
+  - `focused-monitor-changed`, with `monitorId` and `workspace`
   - `mode-changed`
 
   The stream restarts 2 seconds after AeroSpace exits.
 - **Focus events** update the focus at once, so the highlight moves with no CLI round trip. Every event then triggers a refresh from `list-workspaces` and `list-windows` with `--json`. Refreshes are coalesced, so a burst of events costs at most one extra run.
+- **Monitors:** every refresh also reads `list-monitors --format '%{monitor-id}%{monitor-appkit-nsscreen-screens-id}' --json`, and `list-workspaces --all` adds `%{workspace-is-visible}`. A failed `list-monitors` read leaves `monitors` empty and doesn't fail the refresh, and a missing `workspace-is-visible` counts as false.
 - **A safety refresh** also runs every 5 seconds, to catch changes AeroSpace has no event for, such as a background window closing.
 - **Window order:** `list-windows` output is sorted by app name, then window title, whatever the layout. So icons appear in that order rather than layout order; see "Known limitation" below.
 
@@ -113,8 +114,22 @@ Keep the hold even if upstream is fixed, because other apps can rebound focus to
 
 - **Level:** each panel sits in the menu bar row, at `NSWindow.Level.mainMenu - 1`, so an auto-hidden menu bar slides over it. Its collection behaviour is `canJoinAllSpaces`, `stationary`, `ignoresCycle` and `fullScreenAuxiliary`.
 - **`constrainFrameRect`** is overridden to return the requested frame. Without it, AppKit pushes the panel below the notch's safe area (32 pt on a notched built-in display), under the menu bar.
+- **Per screen:** every screen in `NSScreen.screens` gets its own left and right panel. `AppDelegate.syncScreens()` runs at launch and when the screens change. It keys the panels by display ID, re-places the ones it has, and closes the ones whose display is gone. `PillPanel` isn't released when closed, because the delegate still holds it.
+- **Bare displays:** a display with no notch has no safe area. With the menu bar auto-hidden or absent (a secondary display with "Displays have separate Spaces" off), the pills sit on its bare top edge and AeroSpace tiles windows from that edge. The pill ends 32 pt down, so that display needs a top outer gap of 32 pt plus the usual gap, for example `outer.top = [{ monitor."built-in" = 8 }, 40]`.
 - **Width:** the left panel is as wide as `auxiliaryTopLeftArea` (everything left of the notch), and the right one as `auxiliaryTopRightArea`, pinned to the right edge. Displays without a notch get half the screen width each. Clicks on transparent pixels should fall through to what's underneath, but nobody has tested that deliberately.
 - **Height:** the bar is 34 pt tall and the pills are 30 pt (`Theme.pillHeight`). AeroSpace's default top outer gaps leave room for it.
+
+### Multiple monitors
+
+Each screen shows the workspaces of its own AeroSpace monitor, and only the monitor that holds focus is green.
+- **Screen mapping:** `monitor-appkit-nsscreen-screens-id` is the monitor's 1-based position in `NSScreen.screens`. `BarScreen.index` is the same number, so `Snapshot.scoped(toScreen:)` picks the monitor with that `screenIndex`.
+- **Scoping:** `scoped(toScreen:)` is pure. It keeps only that monitor's workspaces and clears `monitors` and `focusedMonitorID`, so a change on another monitor leaves the snapshot equal and the pill's `.animation(value: snapshot)` doesn't fire for it. A screen with no monitor gets no pill.
+- **Focused monitor:** it's the `monitorID` of the workspace that equals `focusedWorkspace`, and `focusedMonitorID` only when that workspace isn't known. The workspace comes first because events arrive in any order, and `focused-workspace-changed` carries no monitor. `focused-monitor-changed` goes through the same hold as the other two focus events in `WorkspaceStore` (`pendingMonitorID`, and `focusedMonitorID` kept in a stale refresh).
+- **Visibility between refreshes:** a focus event lands before the refresh that reports `workspace-is-visible`. So when the store shows a new focused workspace, and in a stale refresh's merge, `markFocusedVisible()` makes it the visible one on its monitor. Without that, switching workspace and then moving to the other monitor within a refresh made the first monitor's capsule slide back to its previous workspace for a moment.
+- **Displays coming and going:** a screen change also asks the store to refresh, so a new display's pill doesn't wait for the 5 s safety refresh.
+- **No monitors:** with `monitors` empty (an old AeroSpace, a fake that fails `list-monitors`, `Snapshot.sample`), screen 1 gets the snapshot unchanged and the other screens get nothing. That is the single-display behaviour.
+- **Unfocused look:** green means focus, so a pill with `hasFocus` false has none. Its capsule is white at `Theme.inactiveCapsuleOpacity` (0.06) for every focus style except `underline`, which keeps its bar in `Theme.grey`. The content on it is `Theme.text`, with icons at `Theme.inactiveIconOpacity` (0.32) and none treated as focused, and the border is `Theme.border`. The maintainer picked these from four strengths, from the calendar's resting 0.16 and 0.55 down, because a parked workspace should recede. At 0.06 the capsule is about as light as the surface0 hover ghost. An empty visible workspace shows its number in that capsule. The `all` style does the same, with nothing dimmed. The unfocused pill shows the monitor's visible workspace, which `list-workspaces` reports as `workspace-is-visible`.
+- **Calendar:** `[calendar] monitor` picks the displays. `built-in` is the built-in display (`CGDisplayIsBuiltin`), or the main display when there's none, as in clamshell. `main` is `NSScreen.screens.first` and `all` is every display. Every screen keeps its right panel even when it draws nothing, so a config reload that changes `monitor` needs no AppKit work.
 
 ### Hiding under the menu bar
 
@@ -155,6 +170,7 @@ Aeronaut must look right with no config file at all. The file only overrides the
 | `[text]` | `font` | `pixel`, `rounded`, `mono`, `sf` |
 | `[calendar]` | `style` | `capsule`, `plain` |
 | `[calendar]` | `icon-size` | 12 to 22 (17) |
+| `[calendar]` | `monitor` | `built-in` (or the main display with no built-in one), `main`, `all` |
 
 `focus-opacity` and `focus-margin` are shared by both pills' capsules. They used to live under `[workspaces]`, which still works with a warning. The old entries sit at the end of the table in `Config.swift` and have no env var.
 
@@ -284,6 +300,5 @@ Upstream discussion is in nikitabobko/AeroSpace#491, with PRs #1932 (`--sort`) a
 
 ## Later ideas
 
-- Per-monitor pills: today everything is drawn on the primary display.
 - Tree-ordered icons once AeroSpace supports it.
 - More items, such as date, weather, battery and volume.
