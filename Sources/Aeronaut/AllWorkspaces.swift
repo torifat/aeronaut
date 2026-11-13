@@ -59,7 +59,9 @@ struct AllWorkspaces: View {
 					layer: layer,
 					onSelectWindow: onSelectWindow
 				)
-				.padding(.horizontal, 4)
+				// The same inset as the capsule's top and bottom, so at the pill's ends
+				// the capsule's rounded end is concentric with the pill's.
+				.padding(.horizontal, Theme.focusMargin)
 				.contentShape(Rectangle())
 				.onTapGesture { onSelectWorkspace(workspace.id) }
 				.transition(.scale(scale: 0.6).combined(with: .opacity))
