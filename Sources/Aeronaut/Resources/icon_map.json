@@ -250,6 +250,12 @@
         ]
     },
     {
+        "iconName": ":asana:",
+        "appNames": [
+            "Asana"
+        ]
+    },
+    {
         "iconName": ":aseprite:",
         "appNames": [
             "Aseprite"
@@ -265,6 +271,12 @@
         "iconName": ":atom:",
         "appNames": [
             "Atom"
+        ]
+    },
+    {
+        "iconName": ":atuin:",
+        "appNames": [
+            "Atuin"
         ]
     },
     {
@@ -289,6 +301,12 @@
         "iconName": ":automator:",
         "appNames": [
             "Automator"
+        ]
+    },
+    {
+        "iconName": ":avec:",
+        "appNames": [
+            "Avec"
         ]
     },
     {
@@ -427,6 +445,12 @@
         "iconName": ":blitzit:",
         "appNames": [
             "Blitzit"
+        ]
+    },
+    {
+        "iconName": ":bloom:",
+        "appNames": [
+            "Bloom"
         ]
     },
     {
@@ -596,6 +620,12 @@
         "iconName": ":choosy:",
         "appNames": [
             "Choosy"
+        ]
+    },
+    {
+        "iconName": ":cider:",
+        "appNames": [
+            "Cider"
         ]
     },
     {
@@ -828,7 +858,8 @@
     {
         "iconName": ":deepseek:",
         "appNames": [
-            "DeepSeek"
+            "DeepSeek",
+            "DeepSeek Harness"
         ]
     },
     {
@@ -1063,6 +1094,12 @@
         ]
     },
     {
+        "iconName": ":excalidraw:",
+        "appNames": [
+            "Excalidraw"
+        ]
+    },
+    {
         "iconName": ":face_time:",
         "appNames": [
             "FaceTime",
@@ -1125,7 +1162,6 @@
         "appNames": [
             "Finder",
             "访达",
-            "Bloom",
             "FlowFinder"
         ]
     },
@@ -1317,10 +1353,11 @@
         ]
     },
     {
-        "iconName": ":git_hub:",
+        "iconName": ":github:",
         "appNames": [
             "GitHub Desktop",
-            "GitHub Copilot"
+            "GitHub Copilot",
+            "GitHub"
         ]
     },
     {
@@ -1447,6 +1484,12 @@
         ]
     },
     {
+        "iconName": ":herdr:",
+        "appNames": [
+            "Herdr"
+        ]
+    },
+    {
         "iconName": ":hermes_agent:",
         "appNames": [
             "Hermes",
@@ -1485,6 +1528,12 @@
             "Applite",
             "BrewMate",
             "Brewlet"
+        ]
+    },
+    {
+        "iconName": ":httpie:",
+        "appNames": [
+            "HTTPie"
         ]
     },
     {
@@ -1754,6 +1803,12 @@
         ]
     },
     {
+        "iconName": ":keymapp:",
+        "appNames": [
+            "Keymapp"
+        ]
+    },
+    {
         "iconName": ":keynote:",
         "appNames": [
             "Keynote",
@@ -1799,6 +1854,7 @@
     {
         "iconName": ":krita:",
         "appNames": [
+            "Krita",
             "krita"
         ]
     },
@@ -1931,6 +1987,12 @@
         ]
     },
     {
+        "iconName": ":macpacker:",
+        "appNames": [
+            "MacPacker"
+        ]
+    },
+    {
         "iconName": ":macpass:",
         "appNames": [
             "MacPass"
@@ -2036,6 +2098,12 @@
         "iconName": ":mattermost:",
         "appNames": [
             "Mattermost"
+        ]
+    },
+    {
+        "iconName": ":max:",
+        "appNames": [
+            "Max"
         ]
     },
     {
@@ -2570,6 +2638,12 @@
         ]
     },
     {
+        "iconName": ":output_hub:",
+        "appNames": [
+            "Output Hub"
+        ]
+    },
+    {
         "iconName": ":overcast:",
         "appNames": [
             "Overcast"
@@ -3046,6 +3120,18 @@
         ]
     },
     {
+        "iconName": ":recordly:",
+        "appNames": [
+            "Recordly"
+        ]
+    },
+    {
+        "iconName": ":reddit:",
+        "appNames": [
+            "Reddit"
+        ]
+    },
+    {
         "iconName": ":reeder5:",
         "appNames": [
             "Reeder"
@@ -3371,6 +3457,18 @@
         ]
     },
     {
+        "iconName": ":speediness:",
+        "appNames": [
+            "Speediness"
+        ]
+    },
+    {
+        "iconName": ":splice:",
+        "appNames": [
+            "Splice"
+        ]
+    },
+    {
         "iconName": ":spotify:",
         "appNames": [
             "Spotify"
@@ -3643,6 +3741,12 @@
         ]
     },
     {
+        "iconName": ":tinyhand:",
+        "appNames": [
+            "TinyHand"
+        ]
+    },
+    {
         "iconName": ":tinyrdm:",
         "appNames": [
             "Tiny RDM"
@@ -3652,6 +3756,19 @@
         "iconName": ":tips:",
         "appNames": [
             "Tips"
+        ]
+    },
+    {
+        "iconName": ":tldraw:",
+        "appNames": [
+            "tldraw"
+        ]
+    },
+    {
+        "iconName": ":tmog:",
+        "appNames": [
+            "Task Manager TMOG",
+            "tmog"
         ]
     },
     {
@@ -3722,6 +3839,14 @@
         ]
     },
     {
+        "iconName": ":tuta_mail:",
+        "appNames": [
+            "Tuta",
+            "Tuta Mail",
+            "Tutanota Desktop"
+        ]
+    },
+    {
         "iconName": ":twingate:",
         "appNames": [
             "Twingate"
@@ -3735,9 +3860,21 @@
         ]
     },
     {
+        "iconName": ":ua_connect:",
+        "appNames": [
+            "UA Connect"
+        ]
+    },
+    {
         "iconName": ":ugreen-nas:",
         "appNames": [
             "UGREEN NAS"
+        ]
+    },
+    {
+        "iconName": ":ujam:",
+        "appNames": [
+            "UJAM"
         ]
     },
     {
@@ -3745,6 +3882,13 @@
         "appNames": [
             "Unity",
             "Unity Hub"
+        ]
+    },
+    {
+        "iconName": ":universal_audio:",
+        "appNames": [
+            "UAD Console",
+            "UAD Meter & Control Panel"
         ]
     },
     {
@@ -3828,6 +3972,12 @@
         ]
     },
     {
+        "iconName": ":vowen:",
+        "appNames": [
+            "Vowen"
+        ]
+    },
+    {
         "iconName": ":vscodium:",
         "appNames": [
             "VSCodium"
@@ -3837,6 +3987,12 @@
         "iconName": ":warp:",
         "appNames": [
             "Warp"
+        ]
+    },
+    {
+        "iconName": ":waves_central:",
+        "appNames": [
+            "Waves Central"
         ]
     },
     {
@@ -3949,6 +4105,12 @@
         ]
     },
     {
+        "iconName": ":x:",
+        "appNames": [
+            "X"
+        ]
+    },
+    {
         "iconName": ":xbox:",
         "appNames": [
             "xemu"
@@ -3963,7 +4125,8 @@
     {
         "iconName": ":xmind:",
         "appNames": [
-            "XMind"
+            "XMind",
+            "Xmind"
         ]
     },
     {
@@ -3991,6 +4154,12 @@
         "appNames": [
             "Yazi",
             "yazi"
+        ]
+    },
+    {
+        "iconName": ":youlean_loudness_meter:",
+        "appNames": [
+            "Youlean Loudness Meter*"
         ]
     },
     {
